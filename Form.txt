@@ -1,0 +1,4311 @@
+CARDVISITS
+├── public
+└── src
+    ├── app
+    │   ├── (auth)
+    │   │   ├── sign-in
+    │   │   │   └── page.tsx
+    │   │   ├── sign-up
+    │   │   │   └── page.tsx
+    │   │   └── verify-email
+    │   ├── [customName]
+    │   │   ├── InteractiveCardContent.tsx
+    │   │   └── page.tsx
+    │   ├── api/trpc/[trpc]
+    │   │   └── route.ts
+    │   ├── dashboard
+    │   │   └── page.tsx
+    │   ├── media
+    │   │   └── page.tsx
+    │   ├── thank-you
+    │   └── upload
+    │   ├── globals.css
+    │   ├── layout.tsx
+    │   └── page.tsx
+    ├── collections
+    │   ├── DigitalBusinessCards.ts
+    │   ├── Media.ts
+    │   └── Users.ts
+    ├── components
+    │   ├── emails/
+    │   ├── ui/
+    │   ├── DigitalBusinessCard.tsx
+    │   ├── Footer.tsx
+    │   ├── Icons.tsx
+    │   ├── ImageSlider.tsx
+    │   ├── MaxWidthWrapper.tsx
+    │   ├── MediaPopup.tsx
+    │   ├── MobileNav.tsx
+    │   ├── Navbar.tsx
+    │   ├── NavItem.tsx
+    │   ├── NavItems.tsx
+    │   ├── Providers.tsx
+    │   ├── RichTextEditor.tsx
+    │   ├── UserAccountNav.tsx
+    │   └── VerifyEmail.tsx
+    ├── hooks
+    │   ├── use-auth.ts
+    │   └── use-on-click-outside.ts
+    ├── lib
+    │   ├── validators
+    │   │   ├── account-credentials-validator.ts
+    │   │   ├── query-validator.ts
+    │   │   └── registration-validator.ts
+    │   ├──payload-utils.ts
+    │   └── utils.ts
+    ├── plugins
+    ├── services
+    ├── trpc
+    ├── types
+        └── index.ts
+    ├── get-payload.ts
+    ├── index.ts
+    ├── middleware.ts
+    ├── next-utils.ts
+    ├── payload-types.ts
+    ├── payload.config.ts
+    ├── plugins.ts
+    └── server.ts
+├── .env
+├── .env.example
+├── .eslintrc.json
+├── .gitattributes
+├── .gitignore
+├── components.json
+├── next-env.d.ts
+├── next.config.js
+├── nodemon.json
+├── package.json
+├── postcss.config.js
+├── tailwind.config.ts
+├── tsconfig.json
+├── tsconfig.server.json
+├── tsconfig.tsbuildinfo
+└── yarn.lock
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CARDVISITS
+├── public
+└── src
+    ├── app
+    │   ├── (auth)
+    │   │   ├── sign-in
+    │   │   │   └── page.tsx
+    'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { trpc } from '@/trpc/client'
+import { toast } from 'sonner'
+import { Icons } from '@/components/Icons'
+import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import Link from 'next/link'
+
+
+const SignInValidator = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+})
+
+type SignInData = z.infer<typeof SignInValidator>
+
+export default function SignInPage() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const { register, handleSubmit, formState: { errors } } = useForm<SignInData>({
+    resolver: zodResolver(SignInValidator),
+  })
+
+  const { mutate: signIn } = trpc.auth.signIn.useMutation({
+    onSuccess: () => {
+      toast.success('Signed in successfully')
+      router.push('/dashboard')
+      router.refresh()
+    },
+    onError: (err) => {
+      if (err.data?.code === 'UNAUTHORIZED') {
+        toast.error('Invalid email or password.')
+      } else {
+        toast.error('An error occurred. Please try again.')
+      }
+      setIsLoading(false)
+    },
+  })
+
+  const onSubmit = (data: SignInData) => {
+    setIsLoading(true)
+    signIn(data)
+  }
+
+  return (
+    <div className='container relative flex pt-20 flex-col items-center justify-center lg:px-0'>
+      <div className='mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]'>
+        <div className='flex flex-col items-center space-y-2 text-center'>
+          <Icons.logo className='h-20 w-20' />
+          <h1 className='text-2xl font-semibold tracking-tight'>
+            Sign in to your account
+          </h1>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='email'>Email</Label>
+            <Input
+              id='email'
+              type='email'
+              placeholder='you@example.com'
+              {...register('email')}
+            />
+            {errors.email && (
+              <p className='text-sm text-red-500'>{errors.email.message}</p>
+            )}
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='password'>Password</Label>
+            <Input
+              id='password'
+              type='password'
+              placeholder='••••••••'
+              {...register('password')}
+            />
+            {errors.password && (
+              <p className='text-sm text-red-500'>{errors.password.message}</p>
+            )}
+          </div>
+          <Button type='submit' className='w-full' disabled={isLoading}>
+            {isLoading ? (
+        <Loader2 className='h-8 w-8 animate-spin' />
+      ) : null}
+            Sign In
+          </Button>
+        </form>
+
+        <p className='text-center text-sm text-muted-foreground'>
+          Don&apos;t have an account?{' '}
+          <Link href='/sign-up' className='font-medium text-primary hover:underline'>
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+    │   │   ├── sign-up
+    │   │   │   └── page.tsx
+    'use client'
+
+import { Icons } from '@/components/Icons'
+import {
+  Button,
+  buttonVariants,
+} from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { ArrowRight } from 'lucide-react'
+import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+
+import {
+  AuthCredentialsValidator,
+  TAuthCredentialsValidator,
+} from '@/lib/validators/account-credentials-validator'
+import { trpc } from '@/trpc/client'
+import { toast } from 'sonner'
+import { ZodError } from 'zod'
+import { useRouter } from 'next/navigation'
+
+const Page = () => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<TAuthCredentialsValidator>({
+    resolver: zodResolver(AuthCredentialsValidator),
+  })
+
+  const router = useRouter()
+
+  const { mutate, isLoading } =
+    trpc.auth.createPayloadUser.useMutation({
+      onError: (err) => {
+        if (err.data?.code === 'CONFLICT') {
+          toast.error(
+            'This email is already in use. Sign in instead?'
+          )
+
+          return
+        }
+
+        if (err instanceof ZodError) {
+          toast.error(err.issues[0].message)
+
+          return
+        }
+
+        toast.error(
+          'Something went wrong. Please try again.'
+        )
+      },
+      onSuccess: ({ sentToEmail }) => {
+        toast.success(
+          `Verification email sent to ${sentToEmail}.`
+        )
+        router.push('/verify-email?to=' + sentToEmail)
+      },
+    })
+
+  const onSubmit = ({
+    email,
+    password,
+  }: TAuthCredentialsValidator) => {
+    mutate({ email, password })
+  }
+
+  return (
+    <>
+      <div className='container relative flex pt-20 flex-col items-center justify-center lg:px-0'>
+        <div className='mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]'>
+          <div className='flex flex-col items-center space-y-2 text-center'>
+            <Icons.logo className='h-20 w-20' />
+            <h1 className='text-2xl font-semibold tracking-tight'>
+              Create an account
+            </h1>
+
+            <Link
+              className={buttonVariants({
+                variant: 'link',
+                className: 'gap-1.5',
+              })}
+              href='/sign-in'>
+              Already have an account? Sign-in
+              <ArrowRight className='h-4 w-4' />
+            </Link>
+          </div>
+
+          <div className='grid gap-6'>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className='grid gap-2'>
+                <div className='grid gap-1 py-2'>
+                  <Label htmlFor='email'>Email</Label>
+                  <Input
+                    {...register('email')}
+                    className={cn({
+                      'focus-visible:ring-red-500':
+                        errors.email,
+                    })}
+                    placeholder='you@example.com'
+                  />
+                  {errors?.email && (
+                    <p className='text-sm text-red-500'>
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className='grid gap-1 py-2'>
+                  <Label htmlFor='password'>Password</Label>
+                  <Input
+                    {...register('password')}
+                    type='password'
+                    className={cn({
+                      'focus-visible:ring-red-500':
+                        errors.password,
+                    })}
+                    placeholder='Password'
+                  />
+                  {errors?.password && (
+                    <p className='text-sm text-red-500'>
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+
+                <Button>Sign up</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+export default Page
+    │   │   └── verify-email
+    │   ├── [customName]
+    │   │   ├── InteractiveCardContent.tsx
+    'use client'
+
+import React, { useState } from 'react'
+import Image from 'next/image'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Phone, Mail, Globe, MapPin, Linkedin, Twitter, Instagram, Facebook, ChevronDown, ChevronUp, X } from 'lucide-react'
+
+const MAX_ITEMS_DISPLAY = 4
+
+const InteractiveCardContent = ({ card }) => {
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+
+  const getImageUrl = (image: any) => {
+    if (!image || !image.url) return ''
+    return image.url.startsWith('http') ? image.url : `${process.env.NEXT_PUBLIC_SERVER_URL}${image.url}`
+  }
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
+
+  const renderArraySection = (title: string, items: any[], renderItem: (item: any, index: number) => React.ReactNode) => {
+    const isExpanded = expandedSections[title]
+    const displayItems = isExpanded ? items : items.slice(0, MAX_ITEMS_DISPLAY)
+
+    return (
+      <Card className="rounded-3xl shadow-xl">
+        <CardContent className="p-8 bg-white">
+          <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">{title}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {displayItems.map(renderItem)}
+          </div>
+          {items.length > MAX_ITEMS_DISPLAY && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => toggleSection(title)}
+                  className="mt-4 w-full"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="mr-2 h-4 w-4" /> Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="mr-2 h-4 w-4" /> View More
+                    </>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <ScrollArea className="h-[80vh] pr-4">
+                  <div className="grid grid-cols-1 gap-6">
+                    {items.map(renderItem)}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <>
+      {/* Contact Information */}
+      {renderArraySection(
+        "Contact Information",
+        [
+          ...(card.websiteURL ? [{ type: 'website', value: card.websiteURL }] : []),
+          ...(card.googleMapsLink ? [{ type: 'location', value: card.googleMapsLink }] : []),
+          ...(card.whatsAppNumber ? [{ type: 'whatsapp', value: card.whatsAppNumber }] : []),
+          ...(card.emails || []),
+          ...(card.mobileNumbers || []),
+          ...(card.customContactOptions || []),
+        ],
+        (item, index) => {
+          switch (item.type) {
+            case 'website':
+              return (
+                <div key={index} className="flex items-center bg-blue-50 p-4 rounded-xl">
+                  <Globe className="mr-3 text-blue-600 w-6 h-6" />
+                  <div>
+                    <p className="font-semibold text-gray-800">Website</p>
+                    <a href={item.value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      {item.value}
+                    </a>
+                  </div>
+                </div>
+              )
+            case 'location':
+              return (
+                <div key={index} className="flex items-center bg-red-50 p-4 rounded-xl">
+                  <MapPin className="mr-3 text-red-600 w-6 h-6" />
+                  <div>
+                    <p className="font-semibold text-gray-800">Location</p>
+                    <a href={item.value} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:underline">
+                      Google Maps
+                    </a>
+                  </div>
+                </div>
+              )
+            case 'whatsapp':
+              return (
+                <div key={index} className="flex items-center bg-green-50 p-4 rounded-xl">
+                  <Phone className="mr-3 text-green-600 w-6 h-6" />
+                  <div>
+                    <p className="font-semibold text-gray-800">WhatsApp</p>
+                    <span className="text-green-600">{item.value}</span>
+                  </div>
+                </div>
+              )
+            default:
+              if ('email' in item) {
+                return (
+                  <div key={index} className="flex items-center bg-purple-50 p-4 rounded-xl">
+                    <Mail className="mr-3 text-purple-600 w-6 h-6" />
+                    <div>
+                      <p className="font-semibold text-gray-800">{item.title}</p>
+                      <a href={`mailto:${item.email}`} className="text-purple-600 hover:underline">{item.email}</a>
+                    </div>
+                  </div>
+                )
+              } else if ('mobileNumber' in item) {
+                return (
+                  <div key={index} className="flex items-center bg-yellow-50 p-4 rounded-xl">
+                    <Phone className="mr-3 text-yellow-600 w-6 h-6" />
+                    <div>
+                      <p className="font-semibold text-gray-800">{item.title}</p>
+                      <a href={`tel:${item.mobileNumber}`} className="text-yellow-600 hover:underline">{item.mobileNumber}</a>
+                    </div>
+                  </div>
+                )
+              } else if  ('linkName' in item) {
+                return (
+                  <div key={index} className="flex items-center bg-gray-50 p-4 rounded-xl">
+                    {item.icon && (
+                      <Image
+                        src={getImageUrl(item.icon)}
+                        alt={item.linkName}
+                        width={24}
+                        height={24}
+                        className="mr-3"
+                      />
+                    )}
+                    <div>
+                      <p className="font-semibold text-gray-800">{item.linkName}</p>
+                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline">
+                        View Profile
+                      </a>
+                    </div>
+                  </div>
+                )
+              }
+              return null
+          }
+        }
+      )}
+
+      {/* Social Media Links */}
+      {(card.socialMediaLinks || card.customSocialMediaLinks) && (
+        <Card className="rounded-3xl shadow-xl">
+          <CardContent className="p-8 bg-white">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2 text-center">Connect With Me</h2>
+            <div className="flex flex-wrap justify-center gap-8">
+              {card.socialMediaLinks?.linkedin && (
+                <a href={card.socialMediaLinks.linkedin} target="_blank" rel="noopener noreferrer" className="transform transition-transform hover:scale-110">
+                  <Linkedin className="w-12 h-12 text-blue-700" />
+                </a>
+              )}
+              {card.socialMediaLinks?.twitter && (
+                <a href={card.socialMediaLinks.twitter} target="_blank" rel="noopener noreferrer" className="transform transition-transform hover:scale-110">
+                  <Twitter className="w-12 h-12 text-blue-400" />
+                </a>
+              )}
+              {card.socialMediaLinks?.instagram && (
+                <a href={card.socialMediaLinks.instagram} target="_blank" rel="noopener noreferrer" className="transform transition-transform hover:scale-110">
+                  <Instagram className="w-12 h-12 text-pink-600" />
+                </a>
+              )}
+              {card.socialMediaLinks?.facebook && (
+                <a href={card.socialMediaLinks.facebook} target="_blank" rel="noopener noreferrer" className="transform transition-transform hover:scale-110">
+                  <Facebook className="w-12 h-12 text-blue-600" />
+                </a>
+              )}
+              {card.customSocialMediaLinks && card.customSocialMediaLinks.map((link, index) => (
+                <a key={index} href={link.url} target="_blank" rel="noopener noreferrer" className="transform transition-transform hover:scale-110">
+                  {link.icon ? (
+                    <Image
+                      src={getImageUrl(link.icon)}
+                      alt={link.title}
+                      width={48}
+                      height={48}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-600">
+                      {link.title[0].toUpperCase()}
+                    </div>
+                  )}
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Products Section */}
+      {card.products && card.products.length > 0 && renderArraySection(
+        "Products and Services",
+        card.products,
+        (product, index) => (
+          <div key={index} className="bg-gray-50 p-4 rounded-xl">
+            {product.image && (
+              <Image
+                src={getImageUrl(product.image)}
+                alt={product.name}
+                width={200}
+                height={200}
+                className="rounded-lg mb-4"
+              />
+            )}
+            <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+            <p className="text-gray-600">
+              Price: ${product.price.toFixed(2)}
+              {product.discountPrice && (
+                <span className="ml-2 text-red-500 line-through">
+                  ${product.discountPrice.toFixed(2)}
+                </span>
+              )}
+            </p>
+          </div>
+        )
+      )}
+      
+      {/* Payment Information */}
+      {card.paymentInfo && (
+        <Card className="rounded-3xl shadow-xl">
+          <CardContent className="p-8 bg-white">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">Payment Information</h2>
+            <div className="space-y-6">
+              {card.paymentInfo.upiLinks && card.paymentInfo.upiLinks.length > 0 && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="font-semibold text-gray-700 mb-2">UPI</p>
+                  <p>{card.paymentInfo.upiLinks[0].upiId}</p>
+                </div>
+              )}
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <p className="font-semibold text-gray-700 mb-2">Bank Details</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {card.paymentInfo.bank && <p><span className="font-medium">Bank:</span> {card.paymentInfo.bank}</p>}
+                  {card.paymentInfo.ifsc && <p><span className="font-medium">IFSC:</span> {card.paymentInfo.ifsc}</p>}
+                  {card.paymentInfo.beneficiary && <p><span className="font-medium">Beneficiary:</span> {card.paymentInfo.beneficiary}</p>}
+                  {card.paymentInfo.accountNumber && <p><span className="font-medium">Account Number:</span> {card.paymentInfo.accountNumber}</p>}
+                  {card.paymentInfo.accountType && <p><span className="font-medium">Account Type:</span> {card.paymentInfo.accountType}</p>}
+                </div>
+              </div>
+              {card.paymentInfo.gstNumber && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="font-semibold text-gray-700 mb-2">GST Number</p>
+                  <p>{card.paymentInfo.gstNumber}</p>
+                </div>
+              )}
+            </div>
+            {card.qrCode && (
+              <div className="mt-6 flex justify-center">
+                <Image
+                  src={getImageUrl(card.qrCode)}
+                  alt={`${card.fullName} QR Code`}
+                  width={200}
+                  height={200}
+                  className="rounded-xl shadow-md"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Photo Gallery */}
+      {card.photoGallery && card.photoGallery.length > 0 && (
+        <Card className="rounded-3xl shadow-xl">
+          <CardContent className="p-8 bg-white">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">Photo Gallery</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {card.photoGallery.map((item, index) => (
+                <div key={index} className="aspect-square relative overflow-hidden rounded-xl">
+                  <Image
+                    src={getImageUrl(item.photo)}
+                    alt={`Gallery image ${index + 1}`}
+                    layout="fill"
+                    objectFit="cover"
+                    className="hover:scale-110 transition-transform duration-300 cursor-pointer"
+                    onClick={() => setSelectedImage(getImageUrl(item.photo))}
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Image Popup */}
+      {selectedImage && (
+        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+          <DialogContent className="max-w-3xl">
+            <div className="relative aspect-square">
+              <Image
+                src={selectedImage}
+                alt="Selected image"
+                layout="fill"
+                objectFit="contain"
+              />
+            </div>
+            <Button
+              className="absolute top-2 right-2"
+              variant="ghost"
+              onClick={() => setSelectedImage(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Videos */}
+      {card.videos && card.videos.length > 0 && renderArraySection(
+        "Videos",
+        card.videos,
+        (video, index) => (
+          <div key={index} className="aspect-video">
+            <iframe
+              src={video.videoUrl}
+              title={`Video ${index + 1}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full rounded-xl"
+            ></iframe>
+          </div>
+        )
+      )}
+
+      {/* CTA Buttons */}
+      {card.ctaButtons && card.ctaButtons.length > 0 && (
+        <Card className="rounded-3xl shadow-xl">
+          <CardContent className="p-8 bg-white">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2 text-center">Quick Actions</h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              {card.ctaButtons.map((button, index) => (
+                <a
+                  key={index}
+                  href={button.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-6 py-3 rounded-full bg-gray-800 text-white hover:bg-gray-700 transition duration-300"
+                >
+                  {button.icon && (
+                    <Image
+                      src={getImageUrl(button.icon)}
+                      alt=""
+                      width={24}
+                      height={24}
+                      className="mr-2"
+                    />
+                  )}
+                  {button.label}
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
+  )
+}
+
+export default InteractiveCardContent
+
+
+
+
+    │   │   └── page.tsx
+import React from 'react'
+import { notFound } from 'next/navigation'
+import { getPayloadClient } from '@/get-payload'
+import Link from 'next/link'
+import Image from 'next/image'
+import DOMPurify from 'isomorphic-dompurify'
+import { Media } from '@/payload-types'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Phone, Mail, Globe, MapPin, Linkedin, Twitter, Instagram, Facebook, CreditCard, Star, Send, Share2 } from 'lucide-react'
+import InteractiveCardContent from './InteractiveCardContent'
+
+interface PageProps {
+  params: {
+    customName: string
+  }
+}
+
+const DigitalBusinessCardPage = async ({ params }: PageProps) => {
+  const { customName } = params
+  const payload = await getPayloadClient()
+
+  if (!payload) {
+    return notFound()
+  }
+
+  const { docs } = await payload.find({
+    collection: 'digital-business-cards',
+    where: {
+      customName: {
+        equals: customName,
+      },
+    },
+  })
+
+  const card = docs[0]
+
+  if (!card) {
+    return notFound()
+  }
+
+  const getImageUrl = (image: Media | undefined) => {
+    if (!image || !image.url) return ''
+    return image.url.startsWith('http') ? image.url : `${process.env.NEXT_PUBLIC_SERVER_URL}${image.url}`
+  }
+
+  const profilePhotoUrl = getImageUrl(card.profilePhoto as Media)
+  const companyLogoUrl = getImageUrl(card.companyLogo as Media)
+  const bannerImageUrl = getImageUrl(card.bannerImage as Media)
+  const qrCodeUrl = getImageUrl(card.qrCode as Media)
+
+  const sanitizedBio = card.bio ? DOMPurify.sanitize(card.bio as string) : ''
+  const sanitizedAbout = card.about ? DOMPurify.sanitize(card.about as string) : ''
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 font-sans">
+      <div className="w-full max-w-4xl mx-auto space-y-8">
+        {/* Header Section */}
+        <Card className="overflow-hidden rounded-3xl shadow-xl">
+          <div className="relative h-64 md:h-80">
+            {bannerImageUrl && (
+              <Image
+                src={bannerImageUrl}
+                alt={card.fullName}
+                layout="fill"
+                objectFit="cover"
+                className="absolute inset-0"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 flex items-end p-8">
+              {profilePhotoUrl && (
+                <Image
+                  src={profilePhotoUrl}
+                  alt={card.fullName}
+                  width={140}
+                  height={140}
+                  className="rounded-full border-4 border-white shadow-lg mr-6"
+                />
+              )}
+              <div className="text-white">
+                <h1 className="text-4xl font-bold mb-2">{card.fullName}</h1>
+                {card.jobTitle && <p className="text-2xl opacity-90">{card.jobTitle}</p>}
+              </div>
+            </div>
+          </div>
+          <CardContent className="p-8 bg-white">
+            {card.tagline && <p className="text-2xl italic text-gray-700 mb-6">{card.tagline}</p>}
+            {card.companyName && (
+              <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-xl">
+                {companyLogoUrl && (
+                  <Image
+                    src={companyLogoUrl}
+                    alt={card.companyName}
+                    width={56}
+                    height={56}
+                    className="rounded-lg"
+                  />
+                )}
+                <div>
+                  <p className="text-xl font-semibold text-gray-800">{card.companyName}</p>
+                  {card.companyAddress && (
+                    <p className="text-sm text-gray-600 mt-1">{card.companyAddress}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Bio Section */}
+        {sanitizedBio && (
+          <Card className="rounded-3xl shadow-xl">
+            <CardContent className="p-8 bg-white">
+              <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">About Me</h2>
+              <div 
+                className="prose max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: sanitizedBio }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Interactive Content */}
+        <InteractiveCardContent card={card} />
+
+        {/* About Section */}
+        {sanitizedAbout && (
+          <Card className="rounded-3xl shadow-xl">
+            <CardContent className="p-8 bg-white">
+              <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">More About Me</h2>
+              <div 
+                className="prose max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: sanitizedAbout }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Additional Links */}
+        <Card className="rounded-3xl shadow-xl">
+          <CardContent className="p-8 bg-white">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2 text-center">Additional Information</h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              {card.googleReviewsLink && (
+                <a href={card.googleReviewsLink} target="_blank" rel="noopener noreferrer" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-6 py-3 rounded-full flex items-center transition duration-300">
+                  <Star className="mr-2 w-5 h-5" />
+                  View Google Reviews
+                </a>
+              )}
+              {card.newsletterSignup && (
+                <a href={card.newsletterSignup} target="_blank" rel="noopener noreferrer" className="bg-blue-100 text-blue-800 hover:bg-blue-200 px-6 py-3 rounded-full flex items-center transition duration-300">
+                  <Send className="mr-2 w-5 h-5" />
+                  Sign up for Newsletter
+                </a>
+              )}
+              {card.brandWebsiteLink && (
+                <a href={card.brandWebsiteLink} target="_blank" rel="noopener noreferrer" className="bg-green-100 text-green-800 hover:bg-green-200 px-6 py-3 rounded-full flex items-center transition duration-300">
+                  <Globe className="mr-2 w-5 h-5" />
+                  Visit Brand Website
+                </a>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <Card className="rounded-3xl shadow-xl">
+          <CardFooter className="justify-center p-6 bg-white">
+            <Link href="/dashboard">
+              <Button variant="outline" className="bg-gray-800 text-white hover:bg-gray-700 px-8 py-3 rounded-full transition duration-300">
+                Back to Dashboard
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+
+      {/* Share Button */}
+      <button className="fixed bottom-6 right-6 bg-gray-800 text-white p-4 rounded-full shadow-lg hover:bg-gray-700 transition duration-300">
+        <Share2 className="w-6 h-6" />
+      </button>
+    </div>
+  )
+}
+
+export default DigitalBusinessCardPage
+
+
+
+
+
+    │   ├── api/trpc/[trpc]
+    │   │   └── route.ts
+    import { appRouter } from '@/trpc'
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
+
+const handler = (req: Request) => {
+  fetchRequestHandler({
+    endpoint: '/api/trpc',
+    req,
+    router: appRouter,
+    // @ts-expect-error context already passed from express middleware
+    createContext: () => ({}),
+  })
+}
+
+export { handler as GET, handler as POST }
+
+
+    │   ├── dashboard
+    │   │   └── page.tsx
+    "use client"
+
+import { useState } from "react"
+import { useForm, Controller, useFieldArray } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
+import { trpc } from "@/trpc/client"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { MediaPopup } from "@/components/MediaPopup"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { PlusCircle, Pencil, X } from "lucide-react"
+import { z } from "zod"
+import dynamic from "next/dynamic"
+
+const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), { ssr: false })
+
+const cardSchema = z.object({
+  id: z.string().optional(),
+  fullName: z.string().min(1, "Full name is required"),
+  jobTitle: z.string().optional(),
+  companyName: z.string().optional(),
+  customName: z
+    .string()
+    .min(3, "Custom name must be at least 3 characters")
+    .max(50, "Custom name must be at most 50 characters"),
+  tagline: z.string().optional(),
+  bio: z.any().optional(),
+  about: z.any().optional(),
+  companyAddress: z.string().optional(),
+  googleMapsLink: z.string().optional(),
+  websiteURL: z.string().url().optional().or(z.literal("")),
+  emails: z.array(z.object({ title: z.string(), email: z.string().email() })).optional(),
+  mobileNumbers: z.array(z.object({ title: z.string(), mobileNumber: z.string() })).optional(),
+  whatsAppNumber: z.string().optional(),
+  socialMediaLinks: z.object({
+    linkedin: z.string().optional(),
+    twitter: z.string().optional(),
+    instagram: z.string().optional(),
+    facebook: z.string().optional(),
+  }).optional(),
+  paymentInfo: z.object({
+    upiLinks: z.array(z.object({ upiId: z.string() })).optional(),
+    bank: z.string().optional(),
+    ifsc: z.string().optional(),
+    beneficiary: z.string().optional(),
+    accountNumber: z.string().optional(),
+    accountType: z.string().optional(),
+    gstNumber: z.string().optional(),
+  }).optional(),
+  googleReviewsLink: z.string().optional(),
+  newsletterSignup: z.string().optional(),
+  brandWebsiteLink: z.string().optional(),
+  profilePhoto: z.string().optional(),
+  companyLogo: z.string().optional(),
+  bannerImage: z.string().optional(),
+  qrCode: z.string().optional(),
+  products: z.array(z.object({
+    name: z.string(),
+    price: z.number(),
+    discountPrice: z.number().optional(),
+    image: z.string().optional(),
+  })).optional(),
+  photoGallery: z.array(z.object({
+    photo: z.string().optional(),
+  })).optional(),
+  customSocialMediaLinks: z.array(z.object({
+    title: z.string(),
+    url: z.string(),
+    icon: z.string().optional(),
+  })).optional(),
+  videos: z.array(z.object({
+    videoUrl: z.string(),
+  })).optional(),
+  ctaButtons: z.array(z.object({
+    label: z.string(),
+    url: z.string(),
+    icon: z.string().optional(),
+  })).optional(),
+})
+
+type CardFormData = z.infer<typeof cardSchema>
+
+export default function Component() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [editingCard, setEditingCard] = useState<CardFormData | null>(null)
+  const [activeTab, setActiveTab] = useState("personal")
+  const [isMediaPopupOpen, setIsMediaPopupOpen] = useState(false)
+  const [currentMediaField, setCurrentMediaField] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    control,
+    watch,
+  } = useForm<CardFormData>({
+    resolver: zodResolver(cardSchema),
+    defaultValues: {
+      bio: '',
+      about: '',
+      profilePhoto: '',
+      companyLogo: '',
+      emails: [{ title: '', email: '' }],
+      mobileNumbers: [{ title: '', mobileNumber: '' }],
+      photoGallery: [],
+      customSocialMediaLinks: [],
+      videos: [],
+      ctaButtons: [],
+    },
+  })
+
+  const { fields: emailFields, append: appendEmail, remove: removeEmail } = useFieldArray({
+    control,
+    name: "emails",
+  })
+
+  const { fields: mobileFields, append: appendMobile, remove: removeMobile } = useFieldArray({
+    control,
+    name: "mobileNumbers",
+  })
+
+  const { fields: productFields, append: appendProduct, remove: removeProduct } = useFieldArray({
+    control,
+    name: "products",
+  })
+
+  const { fields: photoGalleryFields, append: appendPhoto, remove: removePhoto } = useFieldArray({
+    control,
+    name: "photoGallery",
+  })
+
+  const { fields: customSocialMediaFields, append: appendCustomSocial, remove: removeCustomSocial } = useFieldArray({
+    control,
+    name: "customSocialMediaLinks",
+  })
+
+  const { fields: videoFields, append: appendVideo, remove: removeVideo } = useFieldArray({
+    control,
+    name: "videos",
+  })
+
+  const { fields: ctaButtonFields, append: appendCtaButton, remove: removeCtaButton } = useFieldArray({
+    control,
+    name: "ctaButtons",
+  })
+
+  function getInitials(name: string) {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  const profilePhoto = watch('profilePhoto')
+
+  const handleMediaSelect = (mediaItem: any) => {
+    if (currentMediaField) {
+      setValue(currentMediaField as any, mediaItem.id)
+      setIsMediaPopupOpen(false)
+      setCurrentMediaField(null)
+    }
+  }
+
+  const openMediaPopup = (fieldName: string) => {
+    setCurrentMediaField(fieldName)
+    setIsMediaPopupOpen(true)
+  }
+
+  const { data: cards, isLoading: isLoadingCards, error: cardsError, refetch: refetchCards } = trpc.digitalBusinessCards.getUserCards.useQuery()
+
+  const { mutate: createCard } = trpc.digitalBusinessCards.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("Digital business card created successfully")
+      refetchCards()
+      reset()
+      router.push(`/dashboard`)
+    },
+    onError: (error) => {
+      toast.error("Failed to create digital business card")
+      console.error(error)
+      setIsLoading(false)
+    },
+  })
+
+  const { mutate: updateCard } = trpc.digitalBusinessCards.update.useMutation({
+    onSuccess: (data) => {
+      toast.success("Digital business card updated successfully")
+      refetchCards()
+      setEditingCard(null)
+      reset()
+      router.push(`/${data.customName}`)
+    },
+    onError: (error) => {
+      toast.error("Failed to update digital business card")
+      console.error(error)
+      setIsLoading(false)
+    },
+  })
+
+  const onSubmit = (data: CardFormData) => {
+    setIsLoading(true)
+    if (editingCard) {
+      updateCard({ ...data, id: editingCard.id! })
+    } else {
+      createCard(data)
+    }
+  }
+
+  const handleEditCard = (card: CardFormData) => {
+    setEditingCard(card)
+    Object.keys(card).forEach((key) => {
+      if (key === 'bio') {
+        setValue('bio', card.bio || '')
+      } else {
+        setValue(key as keyof CardFormData, card[key as keyof CardFormData])
+      }
+    })
+    setActiveTab("personal")
+  }
+
+  const handleCancelEdit = () => {
+    setEditingCard(null)
+    reset()
+  }
+
+  const renderMediaField = (fieldName: string, label: string) => {
+    const mediaId = watch(fieldName as any)
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={fieldName} className="text-sm font-medium text-gray-700">{label}</Label>
+        <div className="flex items-center space-x-4">
+          <Button
+            type="button"
+            onClick={() => openMediaPopup(fieldName)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            {mediaId ? `Change ${label}` : `Upload ${label}`}
+          </Button>
+          {mediaId && (
+            <span className="text-sm text-gray-500">Media selected</span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center">
+        {editingCard ? "Edit Your Digital Business Card" : "Create Your Digital Business Card"}
+      </h1>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-3xl mx-auto">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-7 w-full mb-8">
+            <TabsTrigger value="personal" className="px-4 py-2">Personal</TabsTrigger>
+            <TabsTrigger value="company" className="px-4 py-2">Company</TabsTrigger>
+            <TabsTrigger value="contact" className="px-4 py-2">Contact</TabsTrigger>
+            <TabsTrigger value="products" className="px-4 py-2">Products</TabsTrigger>
+            <TabsTrigger value="social" className="px-4 py-2">Social</TabsTrigger>
+            <TabsTrigger value="payment" className="px-4 py-2">Payment</TabsTrigger>
+            <TabsTrigger value="additional" className="px-4 py-2">Additional</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="personal" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name</Label>
+                <Input id="fullName" {...register("fullName")} className="w-full" />
+                {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle" className="text-sm font-medium text-gray-700">Job Title</Label>
+                <Input id="jobTitle" {...register("jobTitle")} className="w-full" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tagline" className="text-sm font-medium text-gray-700">Tagline</Label>
+              <Input id="tagline" {...register("tagline")} className="w-full" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bio" className="text-sm font-medium text-gray-700">Bio</Label>
+              <Controller
+                name="bio"
+                control={control}
+                defaultValue={editingCard?.bio || ''}
+                render={({ field }) => <RichTextEditor onChange={field.onChange} value={field.value} />}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="about" className="text-sm font-medium text-gray-700">About</Label>
+              <Controller
+                name="about"
+                control={control}
+                defaultValue={editingCard?.about || ''}
+                render={({ field }) => <RichTextEditor onChange={field.onChange} value={field.value} />}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customName" className="text-sm font-medium text-gray-700">Custom URL Name</Label>
+              <Input id="customName" {...register("customName")} className="w-full" />
+              {errors.customName && <p className="text-red-500 text-sm">{errors.customName.message}</p>}
+            </div>
+            {renderMediaField('profilePhoto', 'Profile Photo')}
+            {renderMediaField('bannerImage', 'Banner Image')}
+            {renderMediaField('qrCode', 'QR Code')}
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="photo-gallery">
+                <AccordionTrigger className="text-sm font-medium text-gray-700">Photo Gallery</AccordionTrigger>
+                <AccordionContent>
+                  {photoGalleryFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-2 mb-2">
+                      {renderMediaField(`photoGallery.${index}.photo`, `Photo ${index + 1}`)}
+                      <Button type="button" onClick={() => removePhoto(index)} variant="outline" size="icon">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={() => appendPhoto({ photo: '' })}
+                    className="mt-2"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Photo
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+
+          <TabsContent value="company" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="companyName" className="text-sm font-medium text-gray-700">Company Name</Label>
+                <Input id="companyName" {...register("companyName")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="websiteURL" className="text-sm font-medium text-gray-700">Website  URL</Label>
+                <Input id="websiteURL" {...register("websiteURL")} className="w-full" />
+                {errors.websiteURL && <p className="text-red-500 text-sm">{errors.websiteURL.message}</p>}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="companyAddress" className="text-sm font-medium text-gray-700">Company Address</Label>
+              <Textarea id="companyAddress" {...register("companyAddress")} className="w-full" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="googleMapsLink" className="text-sm font-medium text-gray-700">Google Maps Link</Label>
+              <Input id="googleMapsLink" {...register("googleMapsLink")} className="w-full" />
+            </div>
+            {renderMediaField('companyLogo', 'Company Logo')}
+          </TabsContent>
+
+          <TabsContent value="contact" className="space-y-6">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="emails">
+                <AccordionTrigger className="text-sm font-medium text-gray-700">Emails</AccordionTrigger>
+                <AccordionContent>
+                  {emailFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-2 mb-2">
+                      <Input {...register(`emails.${index}.title`)} placeholder="Title" className="w-1/3" />
+                      <Input {...register(`emails.${index}.email`)} placeholder="Email" className="w-2/3" />
+                      <Button type="button" onClick={() => removeEmail(index)} variant="outline" size="icon">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={() => appendEmail({ title: '', email: '' })}
+                    className="mt-2"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Email
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="mobile-numbers">
+                <AccordionTrigger className="text-sm font-medium text-gray-700">Mobile Numbers</AccordionTrigger>
+                <AccordionContent>
+                  {mobileFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-2 mb-2">
+                      <Input {...register(`mobileNumbers.${index}.title`)} placeholder="Title" className="w-1/3" />
+                      <Input {...register(`mobileNumbers.${index}.mobileNumber`)} placeholder="Mobile Number" className="w-2/3" />
+                      <Button type="button" onClick={() => removeMobile(index)} variant="outline" size="icon">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={() => appendMobile({ title: '', mobileNumber: '' })}
+                    className="mt-2"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Mobile Number
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            <div className="space-y-2">
+              <Label htmlFor="whatsAppNumber" className="text-sm font-medium text-gray-700">WhatsApp Number</Label>
+              <Input id="whatsAppNumber" {...register("whatsAppNumber")} className="w-full" />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="products" className="space-y-6">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="products">
+                <AccordionTrigger className="text-sm font-medium text-gray-700">Products</AccordionTrigger>
+                <AccordionContent>
+                  {productFields.map((field, index) => (
+                    <div key={field.id} className="flex flex-col space-y-2 mb-4 p-4 border rounded">
+                      <Input {...register(`products.${index}.name`)} placeholder="Product Name" className="w-full" />
+                      <Input {...register(`products.${index}.price`, { valueAsNumber: true })} type="number" placeholder="Price" className="w-full" />
+                      <Input {...register(`products.${index}.discountPrice`, { valueAsNumber: true })} type="number" placeholder="Discount Price (optional)" className="w-full" />
+                      {renderMediaField(`products.${index}.image`, "Product Image")}
+                      <Button type="button" onClick={() => removeProduct(index)} variant="destructive" className="mt-2">
+                        Remove Product
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={() => appendProduct({ name: '', price: 0 })}
+                    className="mt-2"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+
+          <TabsContent value="social" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="linkedin" className="text-sm font-medium text-gray-700">LinkedIn</Label>
+                <Input id="linkedin" {...register("socialMediaLinks.linkedin")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="twitter" className="text-sm font-medium text-gray-700">Twitter</Label>
+                <Input id="twitter" {...register("socialMediaLinks.twitter")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="instagram" className="text-sm font-medium text-gray-700">Instagram</Label>
+                <Input id="instagram" {...register("socialMediaLinks.instagram")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="facebook" className="text-sm font-medium text-gray-700">Facebook</Label>
+                <Input id="facebook" {...register("socialMediaLinks.facebook")} className="w-full" />
+              </div>
+            </div>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="custom-social-media">
+                <AccordionTrigger className="text-sm font-medium text-gray-700">Custom Social Media Links</AccordionTrigger>
+                <AccordionContent>
+                  {customSocialMediaFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-2 mb-2">
+                      <Input {...register(`customSocialMediaLinks.${index}.title`)} placeholder="Title" className="w-1/4" />
+                      <Input {...register(`customSocialMediaLinks.${index}.url`)} placeholder="URL" className="w-2/4" />
+                      {renderMediaField(`customSocialMediaLinks.${index}.icon`, "Icon")}
+                      <Button type="button" onClick={() => removeCustomSocial(index)} variant="outline" size="icon">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={() => appendCustomSocial({ title: '', url: '', icon: '' })}
+                    className="mt-2"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Custom Social Link
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+
+          <TabsContent value="payment" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="upiId" className="text-sm font-medium text-gray-700">UPI ID</Label>
+                <Input id="upiId" {...register("paymentInfo.upiLinks.0.upiId")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bank" className="text-sm font-medium text-gray-700">Bank</Label>
+                <Input id="bank" {...register("paymentInfo.bank")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ifsc" className="text-sm font-medium text-gray-700">IFSC</Label>
+                <Input id="ifsc" {...register("paymentInfo.ifsc")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneficiary" className="text-sm font-medium text-gray-700">Beneficiary</Label>
+                <Input id="beneficiary" {...register("paymentInfo.beneficiary")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accountNumber" className="text-sm font-medium text-gray-700">Account Number</Label>
+                <Input id="accountNumber" {...register("paymentInfo.accountNumber")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accountType" className="text-sm font-medium text-gray-700">Account Type</Label>
+                <Input id="accountType" {...register("paymentInfo.accountType")} className="w-full" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gstNumber" className="text-sm font-medium text-gray-700">GST Number</Label>
+              <Input id="gstNumber" {...register("paymentInfo.gstNumber")} className="w-full" />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="additional" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="googleReviewsLink" className="text-sm font-medium text-gray-700">Google Reviews Link</Label>
+                <Input id="googleReviewsLink" {...register("googleReviewsLink")} className="w-full" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newsletterSignup" className="text-sm font-medium text-gray-700">Newsletter Signup</Label>
+                <Input id="newsletterSignup" {...register("newsletterSignup")} className="w-full" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="brandWebsiteLink" className="text-sm font-medium text-gray-700">Brand Website Link</Label>
+              <Input id="brandWebsiteLink" {...register("brandWebsiteLink")} className="w-full" />
+            </div>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="videos">
+                <AccordionTrigger className="text-sm font-medium text-gray-700">Videos</AccordionTrigger>
+                <AccordionContent>
+                  {videoFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-2 mb-2">
+                      <Input {...register(`videos.${index}.videoUrl`)} placeholder="Video URL" className="w-full" />
+                      <Button type="button" onClick={() => removeVideo(index)} variant="outline" size="icon">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={() => appendVideo({ videoUrl: '' })}
+                    className="mt-2"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Video
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="cta-buttons">
+                <AccordionTrigger className="text-sm font-medium text-gray-700">CTA Buttons</AccordionTrigger>
+                <AccordionContent>
+                  {ctaButtonFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-2 mb-2">
+                      <Input {...register(`ctaButtons.${index}.label`)} placeholder="Label" className="w-1/3" />
+                      <Input {...register(`ctaButtons.${index}.url`)} placeholder="URL" className="w-1/3" />
+                      {renderMediaField(`ctaButtons.${index}.icon`, "Icon")}
+                      <Button type="button" onClick={() => removeCtaButton(index)} variant="outline" size="icon">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={() => appendCtaButton({ label: '', url: '', icon: '' })}
+                    className="mt-2"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add CTA Button
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+        </Tabs>
+
+        <div className="flex gap-4 justify-end mt-8">
+          <Button type="submit" disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            {isLoading ? "Saving..." : editingCard ? "Update Card" : "Create Card"}
+          </Button>
+          {editingCard && (
+            <Button type="button" variant="outline" onClick={handleCancelEdit}>
+              Cancel Edit
+            </Button>
+          )}
+        </div>
+      </form>
+
+      <h2 className="text-2xl font-bold mt-16 mb-8 text-gray-900">Your Digital Business Cards</h2>
+      {isLoadingCards ? (
+        <p className="text-gray-600">Loading your cards...</p>
+      ) : cardsError ? (
+        <p className="text-red-500">Error loading cards: {cardsError.message}</p>
+      ) : cards && cards.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cards.map((card) => (
+            <Card key={card.id} className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="bg-gray-50 border-b flex items-center space-x-4">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={card.profilePhoto} alt={card.fullName} />
+                  <AvatarFallback>{getInitials(card.fullName)}</AvatarFallback>
+                </Avatar>
+                <CardTitle className="text-xl text-gray-900">{card.fullName}</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <p className="text-sm text-gray-600 mb-2"><strong>Job Title:</strong> {card.jobTitle || "N/A"}</p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Company:</strong> {card.companyName || "N/A"}</p>
+                <p className="text-sm text-gray-600"><strong>Custom URL:</strong> {card.customName}</p>
+              </CardContent>
+              <CardFooter className="bg-gray-50 border-t">
+                <Button onClick={() => handleEditCard(card as CardFormData)} className="w-full">
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-600">You haven&apos;t created any digital business cards yet.</p>
+      )}
+      <MediaPopup
+        isOpen={isMediaPopupOpen}
+        onClose={() => setIsMediaPopupOpen(false)}
+        onSelect={handleMediaSelect}
+        title={`Select ${currentMediaField ? currentMediaField.charAt(0).toUpperCase() + currentMediaField.slice(1) : 'Media'}`}
+      />
+    </div>
+  )
+}
+
+
+
+
+    │   ├── media
+    │   │   └── page.tsx
+    'use client'
+
+import { useState } from 'react'
+import { trpc } from '@/trpc/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Upload, Image as ImageIcon, Trash2, RefreshCw } from 'lucide-react'
+import Image from 'next/image'
+import { toast } from 'sonner'
+
+const UploadMediaComponent = ({ onUploadSuccess }: { onUploadSuccess: () => void }) => {
+  const [file, setFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0])
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!file) return
+
+    setUploading(true)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const response = await fetch('/api/media', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+      console.log('File uploaded successfully:', data)
+      toast.success('Media uploaded successfully')
+      onUploadSuccess()
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      toast.error('Failed to upload media')
+    } finally {
+      setUploading(false)
+      setFile(null)
+    }
+  }
+
+  return (
+    <Card className="max-w-md mx-auto mb-8">
+      <CardHeader>
+        <CardTitle>Upload Media</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <Input type="file" onChange={handleFileChange} accept="image/*,video/*" />
+          <Button 
+            onClick={handleUpload} 
+            disabled={!file || uploading}
+            className="w-full"
+          >
+            {uploading ? 'Uploading...' : 'Upload'}
+            <Upload className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function MediaPage() {
+  const { data: mediaItems, isLoading: isLoadingMedia, refetch: refetchMedia } = trpc.media.getAll.useQuery()
+
+  const { mutate: updateMedia } = trpc.media.update.useMutation({
+    onSuccess: () => {
+      refetchMedia()
+    },
+    onError: (error) => {
+      console.error('Error updating media:', error)
+      toast.error('Failed to update media')
+    }
+  })
+
+  const handleDelete = (id: string) => {
+    updateMedia({ id, showFile: false })
+    toast('Media deleted successfully.', {
+      action: {
+        label: 'Restore',
+        onClick: () => handleRestore(id)
+      },
+    })
+  }
+
+  const handleRestore = (id: string) => {
+    updateMedia({ id, showFile: true })
+    toast.success('Media restored')
+  }
+
+  return (
+    <div className="container mx-auto py-10">
+      <UploadMediaComponent onUploadSuccess={refetchMedia} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing Media</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingMedia ? (
+            <p>Loading media...</p>
+          ) : mediaItems && mediaItems.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {mediaItems.filter(item => item.showFile).map((item) => (
+                <div key={item.id} className="relative aspect-square">
+                  {item.url ? (
+                    <>
+                      <Image
+                        src={item.url}
+                        alt={item.filename || 'Media item'}
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-lg"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute bottom-2 right-2 bg-red-500 hover:bg-red-600"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full bg-gray-200 rounded-lg">
+                      <ImageIcon className="h-12 w-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No media items found.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+
+    │   ├── thank-you
+    │   └── upload
+    │   ├── globals.css
+    @tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.swiper-pagination-bullet {
+  width: 7px !important;
+  height: 7px !important;
+  background: rgba(255, 255, 255, 0.2);
+  scale: 0.9 !important;
+}
+
+.swiper-pagination-bullet-active {
+  color: #fff;
+  background: white !important;
+  scale: 1 !important ;
+}
+
+
+
+
+    │   ├── layout.tsx
+    import Navbar from '@/components/Navbar'
+import Providers from '@/components/Providers'
+import { cn, constructMetadata } from '@/lib/utils'
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import { Toaster } from 'sonner'
+import './globals.css'
+import Footer from '@/components/Footer'
+
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata = constructMetadata()
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang='en' className='h-full'>
+      <body
+        className={cn(
+          'relative h-full font-sans antialiased',
+          inter.className
+        )}>
+        <main className='relative flex flex-col min-h-screen'>
+          <Providers>
+            <Navbar />
+            <div className='flex-grow flex-1'>
+              {children}
+            </div>
+            <Footer />
+          </Providers>
+        </main>
+
+        <Toaster position='top-center' richColors />
+      </body>
+    </html>
+  )
+}
+
+
+
+
+    │   └── page.tsx
+    import MaxWidthWrapper from '@/components/MaxWidthWrapper'
+import {
+  Button,
+  buttonVariants,
+} from '@/components/ui/button'
+import {
+  ArrowDownToLine,
+  CheckCircle,
+  Leaf,
+} from 'lucide-react'
+import Link from 'next/link'
+
+const perks = [
+  {
+    name: 'Instant Delivery',
+    Icon: ArrowDownToLine,
+    description:
+      'Get your assets delivered to your email in seconds and download them right away.',
+  },
+  {
+    name: 'Guaranteed Quality',
+    Icon: CheckCircle,
+    description:
+      'Every asset on our platform is verified by our team to ensure our highest quality standards. Not happy? We offer a 30-day refund guarantee.',
+  },
+  {
+    name: 'For the Planet',
+    Icon: Leaf,
+    description:
+      "We've pledged 1% of sales to the preservation and restoration of the natural environment.",
+  },
+]
+
+export default function Home() {
+  return (
+    <>
+      <MaxWidthWrapper>
+        <div className='py-20 mx-auto text-center flex flex-col items-center max-w-3xl'>
+          <h1 className='text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl'>
+            Primium Quality of {' '}
+            <span className='text-blue-600'>
+              India 
+            </span>
+            .
+          </h1>
+          <p className='mt-6 text-lg max-w-prose text-muted-foreground'>
+          Welcome to Hypro Jari! Every product on our platform is thoroughly verified by our dedicated team to uphold the highest standards of quality and excellence. Experience the finest jari products with us!
+          </p>
+          <div className='flex flex-col sm:flex-row gap-4 mt-6'>
+            <Link
+              href='/products'
+              className={buttonVariants()}>
+              Browse Trending
+            </Link>
+            <Button variant='ghost'>
+              Our quality promise &rarr;
+            </Button>
+          </div>
+        </div>
+
+      </MaxWidthWrapper>
+
+      <section className='border-t border-gray-200 bg-gray-50'>
+        <MaxWidthWrapper className='py-20'>
+          <div className='grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-3 lg:gap-x-8 lg:gap-y-0'>
+            {perks.map((perk) => (
+              <div
+                key={perk.name}
+                className='text-center md:flex md:items-start md:text-left lg:block lg:text-center'>
+                <div className='md:flex-shrink-0 flex justify-center'>
+                  <div className='h-16 w-16 flex items-center justify-center rounded-full bg-blue-100 text-blue-900'>
+                    {<perk.Icon className='w-1/3 h-1/3' />}
+                  </div>
+                </div>
+
+                <div className='mt-6 md:ml-4 md:mt-0 lg:ml-0 lg:mt-6'>
+                  <h3 className='text-base font-medium text-gray-900'>
+                    {perk.name}
+                  </h3>
+                  <p className='mt-3 text-sm text-muted-foreground'>
+                    {perk.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </MaxWidthWrapper>
+      </section>
+    </>
+  )
+}
+
+
+
+
+    ├── collections
+    │   ├── DigitalBusinessCards.ts
+    import { CollectionConfig } from 'payload/types';
+
+export const DigitalBusinessCards: CollectionConfig = {
+  slug: 'digital-business-cards',
+  admin: {
+    useAsTitle: 'fullName',
+  },
+  access: {
+    read: () => true,
+  },
+  fields: [
+    {
+      name: 'userId',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+    },
+    {
+      name: 'customName',
+      type: 'text',
+      required: true,
+      unique: true,
+    },
+
+    // Personal Information
+    {
+      name: 'fullName',
+      type: 'text',
+      required: true,
+    },
+    {
+      name: 'jobTitle',
+      type: 'text',
+    },
+    {
+      name: 'companyName',
+      type: 'text',
+    },
+    {
+      name: 'companyLogo',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
+    },
+    {
+      name: 'profilePhoto',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
+    },
+    {
+      name: 'bannerImage',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
+    },
+    {
+      name: 'tagline',
+      type: 'text',
+    },
+    {
+      name: 'bio',
+      type: 'text',
+      admin: {
+        description: 'Enter the bio in HTML format',
+      },
+    },
+    {
+      name: 'about',
+      type: 'text',
+      admin: {
+        description: 'Enter the about in HTML format',
+      },
+    },
+
+    // Company Information
+    {
+      name: 'companyAddress',
+      type: 'textarea',
+    },
+    {
+      name: 'googleMapsLink',
+      type: 'text',
+    },
+    {
+      name: 'websiteURL',
+      type: 'text',
+    },
+
+    // Contact Information
+    {
+      name: 'emails',
+      type: 'array',
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+        },
+        {
+          name: 'email',
+          type: 'text',
+        },
+      ],
+    },
+    {
+      name: 'mobileNumbers',
+      type: 'array',
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+        },
+        {
+          name: 'mobileNumber',
+          type: 'text',
+        },
+      ],
+    },
+    {
+      name: 'whatsAppNumber',
+      type: 'text',
+    },
+    {
+      name: 'customContactOptions',
+      type: 'array',
+      fields: [
+        {
+          name: 'linkName',
+          type: 'text',
+        },
+        {
+          name: 'url',
+          type: 'text',
+        },
+        {
+          name: 'icon',
+          type: 'upload',
+          relationTo: 'media',
+        },
+      ],
+    },
+
+    // Social Media Links
+    {
+      name: 'socialMediaLinks',
+      type: 'group',
+      fields: [
+        { name: 'linkedin', type: 'text' },
+        { name: 'twitter', type: 'text' },
+        { name: 'instagram', type: 'text' },
+        { name: 'facebook', type: 'text' },
+      ],
+    },
+
+    // Payment Information 
+    {
+      name: 'paymentInfo',
+      type: 'group',
+      fields: [
+        {
+          name: 'upiLinks',
+          type: 'array',
+          fields: [{ name: 'upiId', type: 'text' }],
+        },
+        {
+          name: 'bank',
+          type: 'text',
+        },
+        {
+          name: 'ifsc',
+          type: 'text',
+        },
+        {
+          name: 'beneficiary',
+          type: 'text',
+        },
+        {
+          name: 'accountNumber',
+          type: 'text',
+        },
+        {
+          name: 'accountType',
+          type: 'text',
+        },
+        {
+          name: 'gstNumber',
+          type: 'text',
+        },
+      ],
+    },
+    {
+      name: 'qrCode',
+      type: 'upload',
+      relationTo: 'media',
+      required: false,
+    },
+
+    // Product / Services
+    {
+      name: 'products',
+      type: 'array',
+      fields: [
+        { name: 'name', type: 'text' },
+        { name: 'price', type: 'number' },
+        { name: 'discountPrice', type: 'number' },
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+        },
+      ],
+    },
+
+    // New fields
+    {
+      name: 'photoGallery',
+      type: 'array',
+      fields: [
+        {
+          name: 'photo',
+          type: 'upload',
+          relationTo: 'media',
+        },
+      ],
+    },
+    {
+      name: 'customSocialMediaLinks',
+      type: 'array',
+      fields: [
+        { name: 'title', type: 'text' },
+        { name: 'url', type: 'text' },
+        {
+          name: 'icon',
+          type: 'upload',
+          relationTo: 'media',
+        },
+      ],
+    },
+    {
+      name: 'videos',
+      type: 'array',
+      fields: [{ name: 'videoUrl', type: 'text' }],
+    },
+    {
+      name: 'ctaButtons',
+      type: 'array',
+      fields: [
+        { name: 'label', type: 'text' },
+        { name: 'url', type: 'text' },
+        {
+          name: 'icon',
+          type: 'upload',
+          relationTo: 'media',
+        },
+      ],
+    },
+  ],
+};
+
+
+
+
+    │   ├── Media.ts
+    import { User } from '../payload-types'
+import { Access, CollectionConfig } from 'payload/types'
+
+const isAdminOrHasAccessToImages = (): Access => async ({ req }) => {
+  const user = req.user as User | undefined
+
+  if (!user) return false
+  if (user.role === 'admin') return true
+
+  return {
+    user: {
+      equals: req.user.id,
+    },
+  }
+}
+
+export const Media: CollectionConfig = {
+  slug: 'media',
+  hooks: {
+    beforeChange: [
+      ({ req, data }) => {
+        return { ...data, user: req.user.id }
+      },
+    ],
+  },
+  access: {
+    read: async ({ req }) => {
+      const referer = req.headers.referer
+
+      if (!req.user || !referer?.includes('sell')) {
+        return true
+      }
+
+      return await isAdminOrHasAccessToImages()({ req })
+    },
+    delete: isAdminOrHasAccessToImages(),
+    update: isAdminOrHasAccessToImages(),
+  },
+  admin: {
+    hidden: ({ user }) => user.role !== 'admin',
+    useAsTitle: 'filename',
+  },
+  upload: {
+    disableLocalStorage: true,
+    staticURL: '/media1',
+    staticDir: 'media1',
+    imageSizes: [
+      {
+        name: 'thumbnail',
+        width: 400,
+        height: 300,
+        position: 'centre',
+      },
+      {
+        name: 'card',
+        width: 768,
+        height: 1024,
+        position: 'centre',
+      },
+      {
+        name: 'tablet',
+        width: 1024,
+        height: undefined,
+        position: 'centre',
+      },
+    ],
+    mimeTypes: ['image/*'],
+  },
+  fields: [
+    {
+      name: 'user',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      hasMany: false,
+      admin: {
+        condition: () => false,
+      },
+    },
+    {
+      name: 'showFile',
+      type: 'checkbox',
+      label: 'Show File',
+      defaultValue: true,
+    },
+  ],
+}
+
+
+
+
+    │   └── Users.ts
+    import { PrimaryActionEmailHtml } from '../components/emails/PrimaryActionEmail'
+import { Access, CollectionConfig } from 'payload/types'
+
+const adminsAndUser: Access = ({ req: { user } }) => {
+  if (user.role === 'admin') return true
+
+  return {
+    id: {
+      equals: user.id,
+    },
+  }
+}
+
+export const Users: CollectionConfig = {
+  slug: 'users',
+  auth: {
+    verify: {
+      generateEmailHTML: ({ token }) => {
+        return PrimaryActionEmailHtml({
+          actionLabel: "verify your account",
+          buttonText: "Verify Account",
+          href: `${process.env.NEXT_PUBLIC_SERVER_URL}/verify-email?token=${token}`
+        })
+      },
+    },
+  },
+  access: {
+    read: adminsAndUser,
+    create: () => true,
+    update: ({ req }) => req.user.role === 'admin',
+    delete: ({ req }) => req.user.role === 'admin',
+  },
+  admin: {
+    hidden: ({ user }) => user.role !== 'admin',
+    defaultColumns: ['id'],
+  },
+  fields: [
+    {
+      name: 'role',
+      defaultValue: 'user',
+      required: true,
+
+      type: 'select',
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'User', value: 'user' },
+      ],
+    },
+  ],
+}
+
+
+
+    ├── components
+    │   ├── emails/
+    │   ├── ui/
+    │   ├── DigitalBusinessCard.tsx
+    // src/components/DigitalBusinessCard.tsx
+'use client'
+
+import React, { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { trpc } from '@/trpc/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+const formSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  jobTitle: z.string().optional(),
+  companyName: z.string().optional(),
+  tagline: z.string().optional(),
+  companyAddress: z.string().optional(),
+  websiteURL: z.string().url().optional().or(z.literal('')),
+  mobileNumber: z.string().optional(),
+  workPhoneNumber: z.string().optional(),
+  bio: z.string().optional(),
+})
+
+type FormData = z.infer<typeof formSchema>
+
+interface DigitalBusinessCardProps {
+  userId: string
+}
+
+const DigitalBusinessCard: React.FC<DigitalBusinessCardProps> = ({ userId }) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const { data: card, refetch } = trpc.digitalBusinessCards.getByUserId.useQuery({ userId })
+  const updateCard = trpc.digitalBusinessCards.update.useMutation()
+  const createCard = trpc.digitalBusinessCards.create.useMutation()
+
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: card ? {
+      ...card,
+      mobileNumber: card.mobileNumber?.toString() || '',
+      workPhoneNumber: card.workPhoneNumber?.toString() || '',
+    } : {},
+  })
+
+  const onSubmit = async (data: FormData) => {
+    const formattedData = {
+      ...data,
+      mobileNumber: data.mobileNumber ? Number(data.mobileNumber) : null,
+      workPhoneNumber: data.workPhoneNumber ? Number(data.workPhoneNumber) : null,
+    }
+
+    if (card) {
+      await updateCard.mutateAsync({ id: card.id, ...formattedData })
+    } else {
+      await createCard.mutateAsync({ userId, ...formattedData })
+    }
+    setIsEditing(false)
+    refetch()
+  }
+
+  if (!card && !isEditing) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>No Digital Business Card Found</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={() => setIsEditing(true)}>Create New Card</Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{isEditing ? 'Edit Digital Business Card' : 'Digital Business Card'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isEditing ? (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Input {...register('fullName')} placeholder="Full Name" />
+            {errors.fullName && <p className="text-red-500">{errors.fullName.message}</p>}
+            <Input {...register('jobTitle')} placeholder="Job Title" />
+            <Input {...register('companyName')} placeholder="Company Name" />
+            <Input {...register('tagline')} placeholder="Tagline" />
+            <Textarea {...register('companyAddress')} placeholder="Company Address" />
+            <Input {...register('websiteURL')} placeholder="Website URL" />
+            {errors.websiteURL && <p className="text-red-500">{errors.websiteURL.message}</p>}
+            <Input {...register('mobileNumber')} placeholder="Mobile Number" type="tel" />
+            <Input {...register('workPhoneNumber')} placeholder="Work Phone Number" type="tel" />
+            <Textarea {...register('bio')} placeholder="Bio" />
+            <div className="flex justify-end space-x-2">
+              <Button type="submit">Save</Button>
+              <Button onClick={() => setIsEditing(false)} variant="outline">Cancel</Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">{card?.fullName}</h2>
+            <p className="text-lg text-gray-600">{card?.jobTitle}</p>
+            <p>{card?.companyName}</p>
+            <p>{card?.tagline}</p>
+            <p>{card?.companyAddress}</p>
+            <p>Website: <a href={card?.websiteURL} className="text-blue-600 hover:underline">{card?.websiteURL}</a></p>
+            <p>Mobile: {card?.mobileNumber}</p>
+            <p>Work: {card?.workPhoneNumber}</p>
+            <p className="italic">{card?.bio}</p>
+            <Button onClick={() => setIsEditing(true)}>Edit</Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export default DigitalBusinessCard
+
+
+
+
+
+    │   ├── Footer.tsx
+    'use client'
+
+import { usePathname } from 'next/navigation'
+import MaxWidthWrapper from './MaxWidthWrapper'
+import { Icons } from './Icons'
+import Link from 'next/link'
+
+const Footer = () => {
+  const pathname = usePathname()
+  const pathsToMinimize = [
+    '/verify-email',
+    '/sign-up',
+    '/sign-in',
+  ]
+
+  return (
+    <footer className='bg-white flex-grow-0'>
+      <MaxWidthWrapper>
+        <div className='border-t border-gray-200'>
+          {pathsToMinimize.includes(pathname) ? null : (
+            <div className='pb-8 pt-16'>
+              <div className='flex justify-center'>
+                <Icons.logo className='h-12 w-auto' />
+              </div>
+            </div>
+          )}
+
+          {pathsToMinimize.includes(pathname) ? null : (
+            <div>
+              <div className='relative flex items-center px-6 py-6 sm:py-8 lg:mt-0'>
+                <div className='absolute inset-0 overflow-hidden rounded-lg'>
+                  <div
+                    aria-hidden='true'
+                    className='absolute bg-zinc-50 inset-0 bg-gradient-to-br bg-opacity-90'
+                  />
+                </div>
+
+                {/* <div className='text-center relative mx-auto max-w-sm'>
+                  <h3 className='font-semibold text-gray-900'>
+                    Become a seller
+                  </h3>
+                  <p className='mt-2 text-sm text-muted-foreground'>
+                    If you&apos;d like to sell high-quality
+                    digital products, you can do so in
+                    minutes.{' '}
+                    <Link
+                      href='/sign-in?as=seller'
+                      className='whitespace-nowrap font-medium text-black hover:text-zinc-900'>
+                      Get started &rarr;
+                    </Link>
+                  </p>
+                </div> */}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className='py-10 md:flex md:items-center md:justify-between'>
+          <div className='text-center md:text-left'>
+            <p className='text-sm text-muted-foreground'>
+              &copy; {new Date().getFullYear()} All Rights
+              Reserved
+            </p>
+          </div>
+
+          <div className='mt-4 flex items-center justify-center md:mt-0'>
+            <div className='flex space-x-8'>
+              <Link
+                href='#'
+                className='text-sm text-muted-foreground hover:text-gray-600'>
+                Terms
+              </Link>
+              <Link
+                href='#'
+                className='text-sm text-muted-foreground hover:text-gray-600'>
+                Privacy Policy
+              </Link>
+              <Link
+                href='#'
+                className='text-sm text-muted-foreground hover:text-gray-600'>
+                Cookie Policy
+              </Link>
+            </div>
+          </div>
+        </div>
+      </MaxWidthWrapper>
+    </footer>
+  )
+}
+
+export default Footer
+
+
+
+    │   ├── Icons.tsx
+    import Image from 'next/image';
+import { LucideProps } from 'lucide-react';
+
+export const Icons = {
+  logo: (props: LucideProps) => (
+    <Image
+      {...props}
+      src='/hypro.svg'
+      alt='Hypro Logo'
+      width={props.width || 50}
+      height={props.height || 50}
+    />
+  ),
+};
+
+
+
+    │   ├── ImageSlider.tsx
+    "use client"
+
+import Image from 'next/image'
+import { Swiper, SwiperSlide } from 'swiper/react'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import type SwiperType from 'swiper'
+import { useEffect, useState } from 'react'
+import { Pagination } from 'swiper/modules'
+import { cn } from '@/lib/utils'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+interface ImageSliderProps {
+  urls: string[]
+}
+
+const ImageSlider = ({ urls }: ImageSliderProps) => {
+  const [swiper, setSwiper] = useState<null | SwiperType>(
+    null
+  )
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  const [slideConfig, setSlideConfig] = useState({
+    isBeginning: true,
+    isEnd: activeIndex === (urls.length ?? 0) - 1,
+  })
+
+  useEffect(() => {
+    swiper?.on('slideChange', ({ activeIndex }) => {
+      setActiveIndex(activeIndex)
+      setSlideConfig({
+        isBeginning: activeIndex === 0,
+        isEnd: activeIndex === (urls.length ?? 0) - 1,
+      })
+    })
+  }, [swiper, urls])
+
+  const activeStyles =
+    'active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-8 w-8 z-50 place-items-center rounded-full border-2 bg-white border-zinc-300'
+  const inactiveStyles = 'hidden text-gray-400'
+
+  return (
+    <div className='group relative bg-zinc-100 aspect-square overflow-hidden rounded-xl'>
+      <div className='absolute z-10 inset-0 opacity-0 group-hover:opacity-100 transition'>
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            swiper?.slideNext()
+          }}
+          className={cn(
+            activeStyles,
+            'right-3 transition',
+            {
+              [inactiveStyles]: slideConfig.isEnd,
+              'hover:bg-primary-300 text-primary-800 opacity-100':
+                !slideConfig.isEnd,
+            }
+          )}
+          aria-label='next image'>
+          <ChevronRight className='h-4 w-4 text-zinc-700' />{' '}
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            swiper?.slidePrev()
+          }}
+          className={cn(activeStyles, 'left-3 transition', {
+            [inactiveStyles]: slideConfig.isBeginning,
+            'hover:bg-primary-300 text-primary-800 opacity-100':
+              !slideConfig.isBeginning,
+          })}
+          aria-label='previous image'>
+          <ChevronLeft className='h-4 w-4 text-zinc-700' />{' '}
+        </button>
+      </div>
+
+      <Swiper
+        pagination={{
+          renderBullet: (_, className) => {
+            return `<span class="rounded-full transition ${className}"></span>`
+          },
+        }}
+        onSwiper={(swiper) => setSwiper(swiper)}
+        spaceBetween={50}
+        modules={[Pagination]}
+        slidesPerView={1}
+        className='h-full w-full'>
+        {urls.map((url, i) => (
+          <SwiperSlide
+            key={i}
+            className='-z-10 relative h-full w-full'>
+            <Image
+              fill
+              loading='eager'
+              className='-z-10 h-full w-full object-cover object-center'
+              src={url}
+              alt='Product image'
+            />
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </div>
+  )
+}
+
+export default ImageSlider
+
+
+
+    │   ├── MaxWidthWrapper.tsx
+    import { cn } from '@/lib/utils'
+import { ReactNode } from 'react'
+
+const MaxWidthWrapper = ({
+  className,
+  children,
+}: {
+  className?: string
+  children: ReactNode
+}) => {
+  return (
+    <div
+      className={cn(
+        'mx-auto w-full max-w-screen-xl px-2.5 md:px-20',
+        className
+      )}>
+      {children}
+    </div>
+  )
+}
+
+export default MaxWidthWrapper
+
+
+
+    │   ├── MediaPopup.tsx
+    import React from 'react'
+import { trpc } from '@/trpc/client'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import Image from 'next/image'
+
+interface MediaPopupProps {
+  isOpen: boolean
+  onClose: () => void
+  onSelect: (mediaItem: any) => void
+  title: string
+}
+
+export const MediaPopup: React.FC<MediaPopupProps> = ({ isOpen, onClose, onSelect, title }) => {
+  const { data: mediaItems, isLoading } = trpc.media.getAll.useQuery()
+
+  if (isLoading) return <div>Loading...</div>
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-3 gap-4">
+          {mediaItems?.map((item) => (
+            <div key={item.id} className="relative aspect-square">
+              <Image
+                src={item.url}
+                alt={item.filename}
+                layout="fill"
+                objectFit="cover"
+                className="rounded-lg cursor-pointer"
+                onClick={() => onSelect(item)}
+              />
+            </div>
+          ))}
+        </div>
+        <Button onClick={() => window.open('/media', '_blank')}>Upload New Media</Button>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+
+    │   ├── MobileNav.tsx
+    'use client'
+
+import { Menu, X } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+
+const MobileNav = () => {
+  const [isOpen, setIsOpen] = useState<boolean>(false)
+
+  const pathname = usePathname()
+
+  // whenever we click an item in the menu and navigate away, we want to close the menu
+  useEffect(() => {
+    setIsOpen(false)
+  }, [pathname])
+
+  // when we click the path we are currently on, we still want the mobile menu to close,
+  // however we cant rely on the pathname for it because that won't change (we're already there)
+  const closeOnCurrent = (href: string) => {
+    if (pathname === href) {
+      setIsOpen(false)
+    }
+  }
+
+  // remove second scrollbar when mobile menu is open
+  useEffect(() => {
+    if (isOpen)
+      document.body.classList.add('overflow-hidden')
+    else document.body.classList.remove('overflow-hidden')
+  }, [isOpen])
+
+  if (!isOpen)
+    return (
+      <button
+        type='button'
+        onClick={() => setIsOpen(true)}
+        className='lg:hidden relative -m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400'>
+        <Menu className='h-6 w-6' aria-hidden='true' />
+      </button>
+    )
+
+  return (
+    <div>
+      <div className='relative z-40 lg:hidden'>
+        <div className='fixed inset-0 bg-black bg-opacity-25' />
+      </div>
+
+      <div className='fixed overflow-y-scroll overscroll-y-none inset-0 z-40 flex'>
+        <div className='w-4/5'>
+          <div className='relative flex w-full max-w-sm flex-col overflow-y-auto bg-white pb-12 shadow-xl'>
+            <div className='flex px-4 pb-2 pt-5'>
+              <button
+                type='button'
+                onClick={() => setIsOpen(false)}
+                className='relative -m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400'>
+                <X className='h-6 w-6' aria-hidden='true' />
+              </button>
+            </div>
+
+            <div className='space-y-6 border-t border-gray-200 px-4 py-6'>
+              <div className='flow-root'>
+                <Link
+                  onClick={() => closeOnCurrent('/sign-in')}
+                  href='/sign-in'
+                  className='-m-2 block p-2 font-medium text-gray-900'>
+                  Sign in
+                </Link>
+              </div>
+              <div className='flow-root'>
+                <Link
+                  onClick={() => closeOnCurrent('/sign-up')}
+                  href='/sign-up'
+                  className='-m-2 block p-2 font-medium text-gray-900'>
+                  Sign up
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default MobileNav
+
+
+
+    │   ├── Navbar.tsx
+    import Link from 'next/link'
+import { getServerSideUser } from '@/lib/payload-utils'
+import { cookies } from 'next/headers'
+import UserAccountNav from './UserAccountNav'
+import MaxWidthWrapper from './MaxWidthWrapper'
+import { Icons } from './Icons'
+import NavItems from './NavItems'
+import MobileNav from './MobileNav'
+
+const Navbar = async () => {
+  const nextCookies = cookies()
+  const { user } = await getServerSideUser(nextCookies)
+
+  return (
+    <div className='bg-white sticky z-50 top-0 inset-x-0 h-16'>
+      <header className='relative bg-white'>
+        <MaxWidthWrapper>
+          <div className='border-b border-gray-200'>
+            <div className='flex h-16 items-center'>
+              <MobileNav />
+
+              <div className='ml-4 flex lg:ml-0'>
+                <Link href='/'>
+                  <Icons.logo className='h-10 w-10' />
+                </Link>
+              </div>
+
+              <div className='hidden z-50 lg:ml-8 lg:block lg:self-stretch'>
+                <NavItems />
+              </div>
+
+              <div className='ml-auto flex items-center'>
+                <div className='hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6'>
+                  {user ? (
+                    <UserAccountNav user={user} />
+                  ) : (
+                    <>
+                      <Link
+                        href='/sign-in'
+                        className='text-sm font-medium text-gray-700 hover:text-gray-800'>
+                        Sign in
+                      </Link>
+                      <span
+                        className='h-6 w-px bg-gray-200'
+                        aria-hidden='true'
+                      />
+                      <Link
+                        href='/sign-up'
+                        className='text-sm font-medium text-gray-700 hover:text-gray-800'>
+                        Create account
+                      </Link>
+                    </>
+                  )}
+
+                  {user && (
+                    <Link
+                      href='/dashboard'
+                      className='text-sm font-medium text-gray-700 hover:text-gray-800'>
+                      Dashboard
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </MaxWidthWrapper>
+      </header>
+    </div>
+  )
+}
+
+export default Navbar
+
+
+
+    │   ├── NavItem.tsx
+    'use client'
+
+import { Button } from './ui/button'
+import { ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import Image from 'next/image'
+import Link from 'next/link'
+
+interface NavItemProps {
+  handleOpen: () => void
+  close: () => void
+  isOpen: boolean
+  isAnyOpen: boolean
+}
+
+const NavItem = ({
+  isAnyOpen,
+  handleOpen,
+  close,
+  isOpen,
+}: NavItemProps) => {
+  return (
+    <div className='flex'>
+      <div className='relative flex items-center'>
+        <Button
+          className='gap-1.5'
+          onClick={handleOpen}
+          variant={isOpen ? 'secondary' : 'ghost'}>
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 transition-all text-muted-foreground',
+              {
+                '-rotate-180': isOpen,
+              }
+            )}
+          />
+        </Button>
+      </div>
+
+      {isOpen ? (
+        <div
+          onClick={() => close()}
+          className={cn(
+            'absolute inset-x-0 top-full text-sm text-muted-foreground',
+            {
+              'animate-in fade-in-10 slide-in-from-top-5':
+                !isAnyOpen,
+            }
+          )}>
+          <div
+            className='absolute inset-0 top-1/2 bg-white shadow'
+            aria-hidden='true'
+          />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export default NavItem
+
+
+
+
+    │   ├── NavItems.tsx
+    'use client'
+
+import { Button } from './ui/button'
+import Link from 'next/link'
+
+const NavItems = () => {
+  return (
+    <div className='flex items-center gap-4 h-full'>
+      <Button asChild variant='ghost' size='sm'>
+        <Link href='/dashboard'>Dashboard</Link>
+      </Button>
+      <Button asChild variant='ghost' size='sm'>
+        <Link href='/team'>Team</Link>
+      </Button>
+      <Button asChild variant='ghost' size='sm'>
+        <Link href='/projects'>Projects</Link>
+      </Button>
+    </div>
+  )
+}
+
+export default NavItems
+
+
+
+    │   ├── Providers.tsx
+    'use client'
+
+import { PropsWithChildren, useState } from 'react'
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+import { trpc } from '@/trpc/client'
+import { httpBatchLink } from '@trpc/client'
+
+const Providers = ({ children }: PropsWithChildren) => {
+  const [queryClient] = useState(() => new QueryClient())
+  const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: [
+        httpBatchLink({
+          url: `${process.env.NEXT_PUBLIC_SERVER_URL}/api/trpc`,
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: 'include',
+            })
+          },
+        }),
+      ],
+    })
+  )
+
+  return (
+    <trpc.Provider
+      client={trpcClient}
+      queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </trpc.Provider>
+  )
+}
+
+export default Providers
+
+
+
+    │   ├── RichTextEditor.tsx
+    import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import TextAlign from '@tiptap/extension-text-align'
+import Typography from '@tiptap/extension-typography'
+import React, { useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { 
+  Bold, 
+  Italic, 
+  Heading1, 
+  List, 
+  AlignLeft, 
+  AlignCenter, 
+  AlignRight,
+  Undo,
+  Redo,
+} from 'lucide-react'
+
+interface RichTextEditorProps {
+  onChange: (content: string) => void
+  value: string
+}
+
+const MenuBar = ({ editor }: { editor: any }) => {
+  if (!editor) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 mb-2 p-1 border-b">
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        disabled={!editor.can().chain().focus().toggleBold().run()}
+        variant={editor.isActive('bold') ? 'default' : 'outline'}
+        size="sm"
+      >
+        <Bold className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        disabled={!editor.can().chain().focus().toggleItalic().run()}
+        variant={editor.isActive('italic') ? 'default' : 'outline'}
+        size="sm"
+      >
+        <Italic className="h-4 w-4" />
+      </Button>
+
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        variant={editor.isActive('heading', { level: 1 }) ? 'default' : 'outline'}
+        size="sm"
+      >
+        <Heading1 className="h-4 w-4" />
+      </Button>
+
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        variant={editor.isActive('bulletList') ? 'default' : 'outline'}
+        size="sm"
+      >
+        <List className="h-4 w-4" />
+      </Button>
+
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        variant={editor.isActive({ textAlign: 'left' }) ? 'default' : 'outline'}
+        size="sm"
+      >
+        <AlignLeft className="h-4 w-4" />
+      </Button>
+
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        variant={editor.isActive({ textAlign: 'center' }) ? 'default' : 'outline'}
+        size="sm"
+      >
+        <AlignCenter className="h-4 w-4" />
+      </Button>
+
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        variant={editor.isActive({ textAlign: 'right' }) ? 'default' : 'outline'}
+        size="sm"
+      >
+        <AlignRight className="h-4 w-4" />
+      </Button>
+
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().undo().run()}
+        disabled={!editor.can().chain().focus().undo().run()}
+        variant="outline"
+        size="sm"
+      >
+        <Undo className="h-4 w-4" />
+      </Button>
+
+      <Button
+        type="button"
+        onClick={() => editor.chain().focus().redo().run()}
+        disabled={!editor.can().chain().focus().redo().run()}
+        variant="outline"
+        size="sm"
+      >
+        <Redo className="h-4 w-4" />
+      </Button>
+    </div>
+  )
+}
+
+const RichTextEditor: React.FC<RichTextEditorProps> = ({ onChange, value }) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1],
+        },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Typography,
+    ],
+    content: value || '',
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML())
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose max-w-none focus:outline-none min-h-[200px] px-3 py-2',
+      },
+    },
+  })
+
+  // Update editor content when value prop changes
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value || '')
+    }
+  }, [value, editor])
+
+  return (
+    <div className="border rounded-md">
+      <MenuBar editor={editor} />
+      <EditorContent editor={editor} />
+    </div>
+  )
+}
+
+export default RichTextEditor
+
+
+
+    │   ├── UserAccountNav.tsx
+    'use client'
+
+import { User } from '@/payload-types'
+import { Button } from './ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
+import Link from 'next/link'
+import { useAuth } from '@/hooks/use-auth'
+
+const UserAccountNav = ({ user }: { user: User }) => {
+  const { signOut } = useAuth()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        asChild
+        className='overflow-visible'>
+        <Button
+          variant='ghost'
+          size='sm'
+          className='relative'>
+          My account
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        className='bg-white w-60'
+        align='end'>
+        <div className='flex items-center justify-start gap-2 p-2'>
+          <div className='flex flex-col space-y-0.5 leading-none'>
+            <p className='font-medium text-sm text-black'>
+              {user.email}
+            </p>
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link href='/sell'>Seller Dashboard</Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={signOut}
+          className='cursor-pointer'>
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+export default UserAccountNav
+
+
+    │   └── VerifyEmail.tsx
+    'use client'
+
+import { trpc } from '@/trpc/client'
+import { Loader2, XCircle } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { buttonVariants } from './ui/button'
+
+interface VerifyEmailProps {
+  token: string
+}
+
+const VerifyEmail = ({ token }: VerifyEmailProps) => {
+  const { data, isLoading, isError } =
+    trpc.auth.verifyEmail.useQuery({
+      token,
+    })
+
+  if (isError) {
+    return (
+      <div className='flex flex-col items-center gap-2'>
+        <XCircle className='h-8 w-8 text-red-600' />
+        <h3 className='font-semibold text-xl'>
+          There was a problem
+        </h3>
+        <p className='text-muted-foreground text-sm'>
+          This token is not valid or might be expired.
+          Please try again.
+        </p>
+      </div>
+    )
+  }
+
+  if (data?.success) {
+    return (
+      <div className='flex h-full flex-col items-center justify-center'>
+        <div className='relative mb-4 h-60 w-60 text-muted-foreground'>
+          <Image
+            src='/hippo-email-sent.png'
+            fill
+            alt='the email was sent'
+          />
+        </div>
+
+        <h3 className='font-semibold text-2xl'>
+          You&apos;re all set!
+        </h3>
+        <p className='text-muted-foreground text-center mt-1'>
+          Thank you for verifying your email.
+        </p>
+        <Link
+          className={buttonVariants({ className: 'mt-4' })}
+          href='/sign-in'>
+          Sign in
+        </Link>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className='flex flex-col items-center gap-2'>
+        <Loader2 className='animate-spin h-8 w-8 text-zinc-300' />
+        <h3 className='font-semibold text-xl'>
+          Verifying...
+        </h3>
+        <p className='text-muted-foreground text-sm'>
+          This won&apos;t take long.
+        </p>
+      </div>
+    )
+  }
+}
+
+export default VerifyEmail
+
+
+
+    ├── hooks
+    │   ├── use-auth.ts
+    import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+
+export const useAuth = () => {
+  const router = useRouter()
+
+  const signOut = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/logout`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (!res.ok) throw new Error()
+
+      toast.success('Signed out successfully')
+
+      router.push('/sign-in')
+      router.refresh()
+    } catch (err) {
+      toast.error("Couldn't sign out, please try again.")
+    }
+  }
+
+  return { signOut }
+}
+
+
+
+    │   └── use-on-click-outside.ts
+    import { RefObject, useEffect } from "react";
+
+type Event = MouseEvent | TouchEvent;
+
+export const useOnClickOutside = <T extends HTMLElement = HTMLElement>(
+  ref: RefObject<T>,
+  handler: (event: Event) => void
+) => {
+  useEffect(() => {
+    const listener = (event: Event) => {
+      const el = ref?.current;
+      if (!el || el.contains((event?.target as Node) || null)) {
+        return;
+      }
+
+      handler(event); // Call the handler only if the click is outside of the element passed.
+    };
+
+    document.addEventListener("mousedown", listener);
+    document.addEventListener("touchstart", listener);
+
+    return () => {
+      document.removeEventListener("mousedown", listener);
+      document.removeEventListener("touchstart", listener);
+    };
+  }, [ref, handler]); // Reload only if ref or handler changes
+};
+
+
+    ├── lib
+    │   ├── validators
+    │   │   ├── account-credentials-validator.ts
+    import { z } from "zod"
+
+export const AuthCredentialsValidator = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, {
+    message: 'Password must be at least 8 characters long.',
+  }),
+})
+
+export type TAuthCredentialsValidator = z.infer<
+  typeof AuthCredentialsValidator
+>
+
+    │   │   ├── query-validator.ts
+    import { z } from 'zod'
+
+export const QueryValidator = z.object({
+  category: z.string().optional(),
+  sort: z.enum(['asc', 'desc']).optional(),
+  limit: z.number().optional(),
+})
+
+export type TQueryValidator = z.infer<typeof QueryValidator>
+
+
+    │   │   └── registration-validator.ts
+    import { z } from 'zod'
+
+const RoleValidator = z.enum(['employee', 'manager', 'manager_lead', 'sales_employee', 'sales_lead', 'ceo', 'admin'])
+const DepartmentValidator = z.enum(['wordpress', 'ui_ux', 'graphic', 'shopify', 'all'])
+
+export const RegistrationValidator = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, 'Password must be at least 8 characters long'),
+  role: RoleValidator,
+  department: DepartmentValidator.optional(),
+  managerId: z.string().optional(),
+  managerLeadId: z.string().optional(),
+  salesLeadId: z.string().optional(),
+  ceoId: z.string().optional(),
+}).refine(data => {
+  if (['ceo', 'admin'].includes(data.role)) {
+    return true;
+  }
+  return !!data.department;
+}, {
+  message: "Department is required for non-CEO and non-admin roles",
+  path: ["department"],
+});
+
+export type TRegistrationValidator = z.infer<typeof RegistrationValidator>
+
+
+
+    │   ├──payload-utils.ts
+    import { User } from '../payload-types'
+import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
+import { NextRequest } from 'next/server'
+
+export const getServerSideUser = async (
+  cookies: NextRequest['cookies'] | ReadonlyRequestCookies
+) => {
+  const token = cookies.get('payload-token')?.value
+
+  const meRes = await fetch(
+    `${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/me`,
+    {
+      headers: {
+        Authorization: `JWT ${token}`,
+      },
+    }
+  )
+
+  const { user } = (await meRes.json()) as {
+    user: User | null
+  }
+
+  return { user }
+}
+
+
+    │   └── utils.ts
+    import { type ClassValue, clsx } from 'clsx'
+import { Metadata } from 'next'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+export function formatPrice(
+  price: number | string,
+  options: {
+    currency?: 'INR' | 'EUR' | 'GBP' | 'BDT'
+    notation?: Intl.NumberFormatOptions['notation']
+  } = {}
+) {
+  const { currency = 'INR', notation = 'compact' } = options
+
+  const numericPrice =
+    typeof price === 'string' ? parseFloat(price) : price
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    notation,
+    maximumFractionDigits: 2,
+  }).format(numericPrice)
+}
+
+export function constructMetadata({
+  title = 'Card Visits',
+  description = 'Hyprojari is an marketplace for high-quality Jari.',
+  image = '/thumbnail.png',
+  icons = '/favicon.ico',
+  noIndex = false,
+}: {
+  title?: string
+  description?: string
+  image?: string
+  icons?: string
+  noIndex?: boolean
+} = {}): Metadata {
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: image,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [image],
+      creator: '@joshtriedcoding',
+    },
+    icons,
+    metadataBase: new URL('https://digitalhippo.up.railway.app'),
+    ...(noIndex && {
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }),
+  }
+}
+
+    ├── plugins
+    ├── services
+    ├── trpc
+    ├── types
+    │   └── index.ts
+    import { Field, PayloadRequest } from "payload/types"
+import { CloudinaryService } from "../services/cloudinaryService";
+
+export declare type PluginConfig = {
+    cloudinaryFields: Array<string | Partial<Field>>
+}
+
+export declare type CloudinaryPluginRequest = PayloadRequest & {
+    cloudinaryService: CloudinaryService;
+};
+
+
+    ├── get-payload.ts
+    import dotenv from 'dotenv'
+import path from 'path'
+import type { InitOptions } from 'payload/config'
+import payload, { Payload } from 'payload'
+import nodemailer from 'nodemailer'
+
+dotenv.config({
+  path: path.resolve(__dirname, '../.env'),
+})
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.resend.com',
+  secure: true,
+  port: 465,
+  auth: {
+    user: 'resend',
+    pass: process.env.RESEND_API_KEY,
+  },
+})
+
+let cached = (global as any).payload
+
+if (!cached) {
+  cached = (global as any).payload = {
+    client: null,
+    promise: null,
+  }
+}
+
+interface Args {
+  initOptions?: Partial<InitOptions>
+}
+
+export const getPayloadClient = async ({
+  initOptions,
+}: Args = {}): Promise<Payload> => {
+  if (!process.env.PAYLOAD_SECRET) {
+    throw new Error('PAYLOAD_SECRET is missing')
+  }
+
+  if (cached.client) {
+    return cached.client
+  }
+
+  if (!cached.promise) {
+    cached.promise = payload.init({
+      email: {
+        transport: transporter,
+        fromAddress: 'onboarding@challengerate.com',
+        fromName: 'Card Visits',
+      },
+      secret: process.env.PAYLOAD_SECRET,
+      local: initOptions?.express ? false : true,
+      ...(initOptions || {}),
+    })
+  }
+
+  try {
+    cached.client = await cached.promise
+  } catch (e: unknown) {
+    cached.promise = null
+    throw e
+  }
+
+  return cached.client
+}
+
+    ├── index.ts
+    import { mediaManagement } from "./services/cloudinaryService";
+import type { CloudinaryPluginRequest, PluginConfig } from "./types"; // Use 'type' here
+
+export { PluginConfig, mediaManagement, CloudinaryPluginRequest };
+
+
+    ├── middleware.ts
+    import { NextRequest, NextResponse } from 'next/server'
+import { getServerSideUser } from './lib/payload-utils'
+
+export async function middleware(req: NextRequest) {
+  const { nextUrl, cookies } = req
+  const { user } = await getServerSideUser(cookies)
+
+  if (
+    user &&
+    ['/sign-in', '/sign-up'].includes(nextUrl.pathname)
+  ) {
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/`
+    )
+  }
+
+  return NextResponse.next()
+}
+
+
+
+    ├── next-utils.ts
+    import next from "next"
+
+const PORT = Number(process.env.PORT) || 3000
+
+export const nextApp = next({
+    dev: process.env.NODE_ENV !== "production",
+    port: PORT
+})
+
+export const nextHandler = nextApp.getRequestHandler()
+
+
+    ├── payload-types.ts
+    /* tslint:disable */
+/* eslint-disable */
+/**
+ * This file was automatically generated by Payload.
+ * DO NOT MODIFY IT BY HAND. Instead, modify your source Payload config,
+ * and re-run `payload generate:types` to regenerate this file.
+ */
+
+export interface Config {
+  collections: {
+    users: User;
+    media: Media;
+    'digital-business-cards': DigitalBusinessCard;
+    'payload-preferences': PayloadPreference;
+    'payload-migrations': PayloadMigration;
+  };
+  globals: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: string;
+  role: 'admin' | 'user';
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  password: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: string;
+  user?: (string | null) | User;
+  showFile?: boolean | null;
+  cloudinary?: {
+    public_id?: string | null;
+    original_filename?: string | null;
+    format?: string | null;
+    secure_url?: string | null;
+    resource_type?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    tablet?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "digital-business-cards".
+ */
+export interface DigitalBusinessCard {
+  id: string;
+  userId: string | User;
+  customName: string;
+  fullName: string;
+  jobTitle?: string | null;
+  companyName?: string | null;
+  companyLogo?: string | Media | null;
+  profilePhoto?: string | Media | null;
+  bannerImage?: string | Media | null;
+  tagline?: string | null;
+  bio?: string | null;
+  about?: string | null;
+  companyAddress?: string | null;
+  googleMapsLink?: string | null;
+  websiteURL?: string | null;
+  emails?:
+    | {
+        title?: string | null;
+        email?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  mobileNumbers?:
+    | {
+        title?: string | null;
+        mobileNumber?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  whatsAppNumber?: string | null;
+  customContactOptions?:
+    | {
+        linkName?: string | null;
+        url?: string | null;
+        icon?: string | Media | null;
+        id?: string | null;
+      }[]
+    | null;
+  socialMediaLinks?: {
+    linkedin?: string | null;
+    twitter?: string | null;
+    instagram?: string | null;
+    facebook?: string | null;
+  };
+  paymentInfo?: {
+    upiLinks?:
+      | {
+          upiId?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    bank?: string | null;
+    ifsc?: string | null;
+    beneficiary?: string | null;
+    accountNumber?: string | null;
+    accountType?: string | null;
+    gstNumber?: string | null;
+  };
+  qrCode?: string | Media | null;
+  products?:
+    | {
+        name?: string | null;
+        price?: number | null;
+        discountPrice?: number | null;
+        image?: string | Media | null;
+        id?: string | null;
+      }[]
+    | null;
+  photoGallery?:
+    | {
+        photo?: string | Media | null;
+        id?: string | null;
+      }[]
+    | null;
+  customSocialMediaLinks?:
+    | {
+        title?: string | null;
+        url?: string | null;
+        icon?: string | Media | null;
+        id?: string | null;
+      }[]
+    | null;
+  videos?:
+    | {
+        videoUrl?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  ctaButtons?:
+    | {
+        label?: string | null;
+        url?: string | null;
+        icon?: string | Media | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-preferences".
+ */
+export interface PayloadPreference {
+  id: string;
+  user: {
+    relationTo: 'users';
+    value: string | User;
+  };
+  key?: string | null;
+  value?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-migrations".
+ */
+export interface PayloadMigration {
+  id: string;
+  name?: string | null;
+  batch?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+
+
+declare module 'payload' {
+  export interface GeneratedTypes extends Config {}
+}
+
+
+
+    ├── payload.config.ts
+    // src/payload.config.ts
+import { buildConfig } from 'payload/config'
+import { webpackBundler } from '@payloadcms/bundler-webpack'
+import { mongooseAdapter } from '@payloadcms/db-mongodb'
+import { slateEditor } from '@payloadcms/richtext-slate'
+import path from 'path'
+import { Users } from './collections/Users'
+import dotenv from 'dotenv'
+import { Media } from './collections/Media'
+import { DigitalBusinessCards } from './collections/DigitalBusinessCards'
+import cloudinaryPlugin from "./plugins"
+
+dotenv.config({
+  path: path.resolve(__dirname, '../.env'),
+})
+
+export default buildConfig({
+  serverURL: process.env.NEXT_PUBLIC_SERVER_URL || '',
+  collections: [Users, Media, DigitalBusinessCards],
+  plugins: [cloudinaryPlugin()],
+  routes: {
+    admin: '/admin',
+  },
+  admin: {
+    user: 'users',
+    bundler: webpackBundler(),
+    meta: {
+      titleSuffix: '- S R Jay',
+      favicon: '/favicon.ico',
+      ogImage: '/thumbnail.jpg',
+    },
+  },
+  rateLimit: {
+    max: 2000,
+  },
+  editor: slateEditor({}),
+  db: mongooseAdapter({
+    url: process.env.MONGODB_URL!,
+  }),
+  typescript: {
+    outputFile: path.resolve(__dirname, 'payload-types.ts'),
+  },
+})
+
+
+
+    ├── plugins.ts
+    import cloudinaryPlugin from "./plugins/cloudinaryPlugin";
+export default cloudinaryPlugin;
+
+
+    └── server.ts
+    import express from 'express';
+import { getPayloadClient } from './get-payload';
+import { nextApp, nextHandler } from './next-utils';
+import * as trpcExpress from '@trpc/server/adapters/express';
+import { appRouter } from './trpc';
+import { inferAsyncReturnType } from '@trpc/server';
+import bodyParser from 'body-parser';
+import { IncomingMessage } from 'http';
+import nextBuild from 'next/dist/build';
+import path from 'path';
+import { PayloadRequest } from 'payload/types';
+import { parse } from 'url';
+import { mediaManagement } from './services/cloudinaryService';
+
+const app = express();
+const PORT = Number(process.env.PORT) || 3000;
+
+const createContext = ({ req, res }: trpcExpress.CreateExpressContextOptions) => ({
+  req,
+  res,
+});
+
+export type ExpressContext = inferAsyncReturnType<typeof createContext>;
+
+export type WebhookRequest = IncomingMessage & {
+  rawBody: Buffer;
+};
+
+app.use(mediaManagement());
+
+const start = async () => {
+  const webhookMiddleware = bodyParser.json({
+    verify: (req: WebhookRequest, _, buffer) => {
+      req.rawBody = buffer;
+    },
+  });
+
+  const payload = await getPayloadClient({
+    initOptions: {
+      express: app,
+      onInit: async (cms) => {
+        cms.logger.info(`Admin URL: ${cms.getAdminURL()}`);
+      },
+    },
+  });
+
+  if (process.env.NEXT_BUILD) {
+    app.listen(PORT, async () => {
+      payload.logger.info('Next.js is building for production');
+
+      // @ts-expect-error
+      await nextBuild(path.join(__dirname, '../'));
+
+      process.exit();
+    });
+
+    return;
+  }
+
+  const cartRouter = express.Router();
+
+  cartRouter.use(payload.authenticate);
+
+  cartRouter.get('/', (req, res) => {
+    const request = req as PayloadRequest;
+
+    if (!request.user) return res.redirect('/sign-in?origin=cart');
+
+    const parsedUrl = parse(req.url, true);
+    const { query } = parsedUrl;
+
+    return nextApp.render(req, res, '/cart', query);
+  });
+
+  app.use('/cart', cartRouter);
+  app.use(
+    '/api/trpc',
+    trpcExpress.createExpressMiddleware({
+      router: appRouter,
+      createContext,
+    })
+  );
+
+  app.use((req, res) => nextHandler(req, res));
+
+  nextApp.prepare().then(() => {
+    payload.logger.info('Next.js started');
+
+    app.listen(PORT, async () => {
+      payload.logger.info(`Next.js App URL: ${process.env.NEXT_PUBLIC_SERVER_URL}`);
+    });
+  });
+};
+
+start();
+
+
+
+├── .env
+NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+
+# Payload CMS secret - should be kept secure
+PAYLOAD_SECRET=secret
+
+# Database connection string for MongoDB
+MONGODB_URL=mongodb+srv://srjaykikani:Omguru%4017@cluster0.34knq.mongodb.net/card?retryWrites=true&w=majority&appName=Cluster0
+
+
+# Email API key for Resend
+RESEND_API_KEY=re_YJcmrKJS_QCHuQAEgFwWmf3yLPXcD2oBJ
+
+# Pusher credentials for real-time updates
+PUSHER_APP_ID=1852120
+PUSHER_APP_KEY=ae1d57bbf33d81f73fbe
+PUSHER_APP_SECRET=1c5b70e88e1d40758b0e
+PUSHER_APP_CLUSTER=ap2
+
+# Public Pusher credentials for the client
+NEXT_PUBLIC_PUSHER_APP_KEY=ae1d57bbf33d81f73fbe
+NEXT_PUBLIC_PUSHER_APP_CLUSTER=ap2
+
+
+
+CLOUDINARY_CLOUD_NAME=dcvoxijdp
+CLOUDINARY_API_KEY=616478557317976
+CLOUDINARY_API_SECRET=J3Bho4W3rYGi628v3Zo6RUlfQvg
+
+
+
+
+
+
+
+
+
+├── .env.example
+├── .eslintrc.json
+├── .gitattributes
+├── .gitignore
+├── components.json
+├── next-env.d.ts
+├── next.config.js
+├── nodemon.json
+├── package.json
+├── postcss.config.js
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+
+├── tailwind.config.ts
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
+  theme: {
+    container: {
+      center: "true",
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: {
+            height: "0",
+          },
+          to: {
+            height: "var(--radix-accordion-content-height)",
+          },
+        },
+        "accordion-up": {
+          from: {
+            height: "var(--radix-accordion-content-height)",
+          },
+          to: {
+            height: "0",
+          },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+};
+
+├── tsconfig.json
+├── tsconfig.server.json
+├── tsconfig.tsbuildinfo
+└── yarn.lock
