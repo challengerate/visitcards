@@ -244,16 +244,6 @@ export default function Component() {
     reset();
   };
 
-  const getProfilePhotoUrl = (
-    profilePhoto: string | { url?: string | null } | null | undefined
-  ): string | undefined => {
-    if (typeof profilePhoto === "string") return profilePhoto;
-    if (profilePhoto && typeof profilePhoto === "object" && profilePhoto.url) {
-      return profilePhoto.url || undefined; // Ensures the url is either string or undefined
-    }
-    return undefined;
-  };
-
   const renderMediaField = (fieldName: string, label: string) => {
     const mediaId = watch(fieldName as any);
     return (
@@ -1040,7 +1030,45 @@ export default function Component() {
 
   return (
     <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      {/* Other component code... */}
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center">
+        {editingCard
+          ? "Edit Your Digital Business Card"
+          : "Create Your Digital Business Card"}
+      </h1>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-8 max-w-3xl mx-auto"
+      >
+        <div className="mt-8">
+          {renderSection("personal")}
+          {renderSection("company")}
+          {renderSection("contact")}
+          {renderSection("products")}
+          {renderSection("social")}
+          {renderSection("payment")}
+          {renderSection("additional")}
+        </div>
+
+        <div className="flex gap-4 justify-end mt-8">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isLoading
+              ? "Saving..."
+              : editingCard
+                ? "Update Card"
+                : "Create Card"}
+          </Button>
+          {editingCard && (
+            <Button type="button" variant="outline" onClick={handleCancelEdit}>
+              Cancel Edit
+            </Button>
+          )}
+        </div>
+      </form>
+
       <h2 className="text-2xl font-bold mt-16 mb-8 text-gray-900">
         Your Digital Business Cards
       </h2>
@@ -1059,7 +1087,7 @@ export default function Component() {
             >
               <CardHeader className="bg-gray-50 border-b flex items-center space-x-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={getProfilePhotoUrl(card.profilePhoto)} alt={card.fullName} />
+                  <AvatarImage src={card.profilePhoto} alt={card.fullName} />
                   <AvatarFallback>{getInitials(card.fullName)}</AvatarFallback>
                 </Avatar>
                 <CardTitle className="text-xl text-gray-900">
@@ -1100,6 +1128,24 @@ export default function Component() {
           You haven&apos;t created any digital business cards yet.
         </p>
       )}
+      <MediaPopup
+        isOpen={isMediaPopupOpen}
+        onClose={() => setIsMediaPopupOpen(false)}
+        onSelect={handleMediaSelect}
+        title={`Select ${
+          currentMediaField
+            ? currentMediaField.charAt(0).toUpperCase() +
+              currentMediaField.slice(1)
+            : "Media"
+        }`}
+      />
+      <FloatingDock
+  items={sections}
+  desktopClassName="hidden md:flex fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
+  mobileClassName="md:hidden z-50"
+  labelPosition="below"
+  onClick={(sectionId) => scrollToSection(sectionId)}
+/>
     </div>
   );
 }
