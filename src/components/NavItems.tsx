@@ -9,17 +9,7 @@ const NavItems = () => {
       <ul className='flex items-center justify-center gap-8'>
         <li>
           <Button asChild variant='ghost' size='sm'>
-            <Link href='/dashboard'>Dashboard</Link>
-          </Button>
-        </li>
-        <li>
-          <Button asChild variant='ghost' size='sm'>
-            <Link href='/team'>Team</Link>
-          </Button>
-        </li>
-        <li>
-          <Button asChild variant='ghost' size='sm'>
-            <Link href='/projects'>Projects</Link>
+            <Link href='/contactus'>Contact Us</Link>
           </Button>
         </li>
       </ul>
