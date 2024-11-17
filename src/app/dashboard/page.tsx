@@ -1087,22 +1087,22 @@ export default function Component() {
             >
               <CardHeader className="bg-gray-50 border-b flex items-center space-x-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={card.profilePhoto} alt={card.fullName} />
-                  <AvatarFallback>{getInitials(card.fullName)}</AvatarFallback>
+                  <AvatarImage src={card.profilePhoto as any} alt={card.fullName as any} />
+                  <AvatarFallback>{getInitials(card.fullName as any)}</AvatarFallback>
                 </Avatar>
                 <CardTitle className="text-xl text-gray-900">
-                  {card.fullName}
+                  {card.fullName as any}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
                 <p className="text-sm text-gray-600 mb-2">
-                  <strong>Job Title:</strong> {card.jobTitle || "N/A"}
+                  <strong>Job Title:</strong> {card.jobTitle as any|| "N/A"}
                 </p>
                 <p className="text-sm text-gray-600 mb-2">
-                  <strong>Company:</strong> {card.companyName || "N/A"}
+                  <strong>Company:</strong> {card.companyName as any|| "N/A"}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <strong>Custom URL:</strong> {card.customName}
+                  <strong>Custom URL:</strong> {card.customName as any}
                 </p>
               </CardContent>
               <CardFooter className="bg-gray-50 border-t flex justify-between">
@@ -1144,6 +1144,7 @@ export default function Component() {
   desktopClassName="hidden md:flex fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
   mobileClassName="md:hidden z-50"
   labelPosition="below"
+  //@ts-ignore
   onClick={(sectionId) => scrollToSection(sectionId)}
 />
     </div>
