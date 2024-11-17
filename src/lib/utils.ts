@@ -27,8 +27,8 @@ export function formatPrice(
 }
 
 export function constructMetadata({
-  title = 'Card Visits',
-  description = 'Hyprojari is an marketplace for high-quality Jari.',
+  title = 'Visit Cards',
+  description = 'A Link That’s Rich, Beautiful, and You.',
   image = '/thumbnail.png',
   icons = '/favicon.ico',
   noIndex = false,
