@@ -191,24 +191,15 @@ export default function HomePage() {
                 A smarter way to share who you are, what you do, and everything you create.
               </p>
               <div className="flex flex-col items-center justify-center mt-8 md:mt-12 w-full">
-                <Link
-                  href="/sign-up"
-                  className="flex items-center justify-center w-max rounded-full border-t border-foreground/30 bg-white/20 backdrop-blur-lg px-2 py-1 md:py-2 gap-2 md:gap-8 shadow-3xl shadow-background/40 cursor-pointer select-none"
-                >
-                  <p className="text-foreground text-sm text-center md:text-base font-medium pl-4 pr-4 lg:pr-0">
-                    ✨ {"  "} Start creating your NFC Digital Visit Card now!
-                  </p>
-                  <Button
-                    size="sm"
-                    className="rounded-full hidden lg:flex border border-foreground/20"
-                  >
-                    Create Your Visit Card
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </Link>
+        <Link href="/sign-up">
+          <Button className="rounded-full text-lg px-6 py-3 font-medium">
+            Create Your Visit Card
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+    </Link>
                 <Link
                   href="/sign-in"
-                  className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
+                  className="mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 >
                   Login
                 </Link>
