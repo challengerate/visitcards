@@ -1,11 +1,8 @@
-import Navbar from '@/components/Navbar'
 import Providers from '@/components/Providers'
 import { cn, constructMetadata } from '@/lib/utils'
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
+import { Inter } from 'next/font/google'
 import './globals.css'
-import Footer from '@/components/Footer'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -17,22 +14,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang='en' className='h-full'>
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body
         className={cn(
-          'relative h-full font-sans antialiased',
+          'relative h-full font-sans antialiased bg-background text-foreground max-w-full overflow-x-hidden',
           inter.className
-        )}>
-        <main className='relative flex flex-col min-h-screen'>
+        )}
+      >
           <Providers>
-            <Navbar />
-            <div className='flex-grow flex-1'>
-              {children}
-            </div>
-            <Footer />
+              <main className="flex-grow flex-1">
+                {children}
+              </main>
           </Providers>
-        </main>
-
         <Toaster position='top-center' richColors />
       </body>
     </html>
