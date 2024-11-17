@@ -7,13 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { trpc } from '@/trpc/client'
 import { toast } from 'sonner'
-import { Icons } from '@/components/Icons'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
-
+import Image from 'next/image'
 
 const SignInValidator = z.object({
   email: z.string().email(),
@@ -55,7 +54,15 @@ export default function SignInPage() {
     <div className='container relative flex pt-20 flex-col items-center justify-center lg:px-0'>
       <div className='mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]'>
         <div className='flex flex-col items-center space-y-2 text-center'>
-          <Icons.logo className='h-20 w-20' />
+          <div className='h-20 w-20 rounded-lg overflow-hidden'>
+            <Image
+              src="/logo1.png"
+              alt="Logo"
+              width={80}
+              height={80}
+              className="rounded-lg"
+            />
+          </div>
           <h1 className='text-2xl font-semibold tracking-tight'>
             Sign in to your account
           </h1>
@@ -88,8 +95,8 @@ export default function SignInPage() {
           </div>
           <Button type='submit' className='w-full' disabled={isLoading}>
             {isLoading ? (
-        <Loader2 className='h-8 w-8 animate-spin' />
-      ) : null}
+              <Loader2 className='h-8 w-8 animate-spin' />
+            ) : null}
             Sign In
           </Button>
         </form>
