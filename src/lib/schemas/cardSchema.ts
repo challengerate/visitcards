@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 export const cardSchema = z.object({
+  id: z.string().optional(),
   fullName: z.string().min(1, 'Full name is required'),
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
