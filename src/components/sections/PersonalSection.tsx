@@ -35,7 +35,6 @@ export function PersonalSection({ renderMediaField }: PersonalSectionProps) {
           <Input id="jobTitle" {...register("jobTitle")} />
         </div>
       </div>
-      {/* Add other personal fields */}
       <div className="space-y-2">
         <Label htmlFor="tagline">Tagline</Label>
         <Input id="tagline" {...register("tagline")} />
@@ -44,6 +43,16 @@ export function PersonalSection({ renderMediaField }: PersonalSectionProps) {
         <Label htmlFor="bio">Bio</Label>
         <Controller
           name="bio"
+          control={control}
+          render={({ field }) => (
+            <RichTextEditor onChange={field.onChange} value={field.value} />
+          )}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="about">About</Label>
+        <Controller
+          name="about"
           control={control}
           render={({ field }) => (
             <RichTextEditor onChange={field.onChange} value={field.value} />
