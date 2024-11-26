@@ -309,6 +309,7 @@ export default function Component() {
         desktopClassName="hidden md:flex fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
         mobileClassName="md:hidden z-50"
         labelPosition="below"
+        //@ts-ignore
         onClick={(sectionId) => scrollToSection(sectionId)}
       />
     </div>
