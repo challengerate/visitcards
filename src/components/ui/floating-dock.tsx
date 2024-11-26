@@ -9,35 +9,55 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import { useRef } from "react";
+import { ReactNode } from 'react';
 
-export const FloatingDock = ({
-  items,
-  desktopClassName,
-  mobileClassName,
-  labelPosition = "below",
-}: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
+interface FloatingDockItem {
+  id: string;
+  title: string;
+  icon: ReactNode;
+  href: string;
+}
+
+interface FloatingDockProps {
+  items: FloatingDockItem[];
   desktopClassName?: string;
   mobileClassName?: string;
-  labelPosition?: "above" | "below";
-}) => {
+  labelPosition?: 'above' | 'below';
+  onItemClick?: (id: string) => void;
+}
+
+export function FloatingDock({ items, desktopClassName, mobileClassName, labelPosition = 'below', onItemClick }: FloatingDockProps) {
   return (
     <>
-      <FloatingDockDesktop items={items} className={desktopClassName} labelPosition={labelPosition} />
-      <FloatingDockMobile items={items} className={mobileClassName} labelPosition={labelPosition} />
+      <FloatingDockDesktop 
+        items={items} 
+        className={desktopClassName} 
+        labelPosition={labelPosition} 
+        onItemClick={onItemClick}
+      />
+      <FloatingDockMobile 
+        items={items} 
+        className={mobileClassName} 
+        labelPosition={labelPosition} 
+        onItemClick={onItemClick}
+      />
     </>
   );
-};
+}
 
-const FloatingDockMobile = ({
-  items,
-  className,
-  labelPosition,
-}: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
+interface DockProps {
+  items: {
+    id: string;
+    title: string;
+    icon: React.ReactNode;
+    href: string;
+  }[];
   className?: string;
   labelPosition: "above" | "below";
-}) => {
+  onItemClick?: (id: string) => void;
+}
+
+const FloatingDockMobile = ({ items, className, labelPosition, onItemClick }: DockProps) => {
   return (
     <div className={cn(
       "block md:hidden",
@@ -76,15 +96,7 @@ const FloatingDockMobile = ({
   );
 };
 
-const FloatingDockDesktop = ({
-  items,
-  className,
-  labelPosition,
-}: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
-  className?: string;
-  labelPosition: "above" | "below";
-}) => {
+const FloatingDockDesktop = ({ items, className, labelPosition, onItemClick }: DockProps) => {
   let mouseX = useMotionValue(Infinity);
   return (
     <motion.div
