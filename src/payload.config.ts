@@ -10,6 +10,8 @@ import { Media } from './collections/Media'
 import { DigitalBusinessCards } from './collections/DigitalBusinessCards'
 import { VisitorResponses } from './collections/VisitorResponses'
 import cloudinaryPlugin from "./plugins"
+import Logo from './graphics/Logo';
+import Icon from './graphics/Icon';
 
 dotenv.config({
   path: path.resolve(__dirname, '../.env'),
@@ -25,6 +27,12 @@ export default buildConfig({
   admin: {
     user: 'users',
     bundler: webpackBundler(),
+    components: {
+      graphics: {
+        Icon,
+        Logo,
+      },
+    },
     meta: {
       titleSuffix: '- S R Jay',
       favicon: '/favicon.ico',
