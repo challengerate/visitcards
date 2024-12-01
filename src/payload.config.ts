@@ -12,6 +12,7 @@ import { VisitorResponses } from './collections/VisitorResponses'
 import cloudinaryPlugin from "./plugins"
 import Logo from './graphics/Logo';
 import Icon from './graphics/Icon';
+import { extensions } from '@tiptap/core'
 
 dotenv.config({
   path: path.resolve(__dirname, '../.env'),
@@ -26,7 +27,28 @@ export default buildConfig({
   },
   admin: {
     user: 'users',
+    css: path.resolve(__dirname, '../style.css'),
     bundler: webpackBundler(),
+    webpack: (config) => ({
+      ...config,
+      module: {
+        ...config.module,
+        rules: [
+          ...(config.module?.rules || []),
+          {
+            test: /\style.css$/i,
+            use: ["style-loader", "css-loader"],
+          },
+        ],
+      },
+      resolve: {
+        ...config.resolve,
+        alias: {
+          ...config.resolve?.alias,
+          extensions: ['*', '.js', '.jsx', '.ts', '.tsx'],
+        },
+      },
+    }),
     components: {
       graphics: {
         Icon,
