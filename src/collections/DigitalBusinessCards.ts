@@ -5,9 +5,54 @@ export const DigitalBusinessCards: CollectionConfig = {
   slug: 'digital-business-cards',
   admin: {
     useAsTitle: 'fullName',
+    hideAPIURL: true, // Hides the API button
+    listSearchableFields: ['fullName', 'customName', 'companyName'], // Makes these fields searchable
+    group: 'Business Cards', // Groups in sidebar
+    defaultColumns: ['fullName', 'customName', 'companyName'], // Shows only these columns in list view
+    preview: (doc) => {
+      if (doc?.customName) {
+        return `${process.env.NEXT_PUBLIC_SERVER_URL}/card/${doc.customName}`;
+      }
+      return null;
+    },
   },
   access: {
-    read: () => true,
+    read: ({ req: { user } }) => {
+      if (user?.role === 'admin') return true;
+      if (user) {
+        return {
+          userId: {
+            equals: user.id,
+          },
+        };
+      }
+      return true;
+    },
+    update: ({ req: { user }, id }) => {
+      if (user?.role === 'admin') return true;
+      if (user) {
+        return {
+          userId: {
+            equals: user.id,
+          },
+        };
+      }
+      return false;
+    },
+    delete: ({ req: { user } }) => {
+      if (user?.role === 'admin') return true;
+      if (user) {
+        return {
+          userId: {
+            equals: user.id,
+          },
+        };
+      }
+      return false;
+    },
+    create: ({ req: { user } }) => {
+      return Boolean(user);
+    },
   },
 
   // ==================== Fields Configuration ====================
@@ -21,12 +66,18 @@ export const DigitalBusinessCards: CollectionConfig = {
           type: 'relationship',
           relationTo: 'users',
           required: true,
+          admin: {
+            hidden: true, // Hides userId from form
+          },
         },
         {
           name: 'customName',
           type: 'text',
           required: true,
           unique: true,
+          admin: {
+            description: 'This will be your card URL (e.g., yourname)',
+          },
         },
       ]
     },
